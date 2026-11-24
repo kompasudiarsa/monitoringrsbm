@@ -406,6 +406,15 @@
             width: 100%;
         }
     }
+    /* Jhon | 2026-11-24 12:57 WITA | UBAH: tampilan ringkas selaras halaman surat kontrol. */
+    .bpjs-page{padding:16px 24px;background:#f8fafc}.bpjs-container{max-width:none}.bpjs-title{font-size:23px;line-height:1.3;letter-spacing:-.025em}.bpjs-desc{font-size:13px;margin:8px 0 16px}.bpjs-eyebrow{display:none}.bpjs-card{border-radius:18px;padding:18px;box-shadow:0 6px 24px #0f172a08}.summary-box{border-radius:16px;box-shadow:0 4px 16px #0f172a06}.riwayat-check{cursor:pointer;border:0;font:inherit;font-weight:700;max-width:180px;white-space:normal}.riwayat-check:focus-visible{outline:3px solid #7dd3fc;outline-offset:3px}
+    .riwayat-dialog{width:min(760px,calc(100vw - 32px));max-height:85vh;border:0;border-radius:20px;padding:0;box-shadow:0 24px 80px #0f172a50}.riwayat-dialog::backdrop{background:#0f172a80}.riwayat-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px;border-bottom:1px solid #e2e8f0}.riwayat-dialog-header h2{font-size:18px;margin:0}.riwayat-dialog-header button{border:0;border-radius:8px;padding:8px 12px;cursor:pointer}.riwayat-dialog-body{padding:18px;overflow:auto;max-height:65vh}.riwayat-detail-item{padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:10px;overflow-wrap:anywhere}.riwayat-detail-item p{margin:6px 0;font-size:13px}
+    @media(max-width:700px){.bpjs-page{padding:12px}.bpjs-card{padding:14px}.bpjs-title{font-size:20px}}
+    /* Jhon | 2026-11-24 13:06 WITA | UBAH: lima kontrol filter responsif, tanpa kolom terjepit. */
+    .bpjs-page .riwayat-date-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+    .bpjs-page .riwayat-date-grid .actions-row { grid-column: 1 / -1; }
+    @media(max-width:900px){.bpjs-page .riwayat-date-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(max-width:540px){.bpjs-page .riwayat-date-grid{grid-template-columns:1fr;}}
 </style>
 
 @php
@@ -452,14 +461,11 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
             Kembali ke Menu
         </a>
         <h1 class="bpjs-title">
-            Cek riwayat kontrol SIMRS yang sudah dibuatkan antrean BPJS.
+            Cek Riwayat Kontrol vs Antrean BPJS.
         </h1>
 
-        <div class="bpjs-desc">
-            Sistem mengambil data dari <strong>SIMRS pasien/get-riwayat-kontrol</strong>,
-            lalu membandingkan <strong>noreservasi SIMRS</strong> dengan
-            <strong>kodebooking BPJS</strong> dari antrean per tanggal.
-        </div>
+        {{-- Jhon | 2026-11-24 12:57 WITA | UBAH: petunjuk singkat tanpa detail implementasi. --}}
+        <p class="bpjs-desc">Klik status untuk mengecek antrean BPJS berdasarkan nomor reservasi.</p>
 
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -487,9 +493,17 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                 method="GET"
                 action="{{ route('bpjs-antrean.cek-riwayat-kontrol') }}">
 
-                <div class="filter-grid">
+                {{-- Jhon | 2026-11-24 13:06 WITA | TAMBAH: pilihan tanggal SIMRS; akses BPJS mengikuti tanggal pelayanan hasilnya. --}}
+                <div class="filter-grid riwayat-date-grid">
                     <div class="form-group">
-                        <label class="form-label">Tanggal Kontrol</label>
+                        <label class="form-label" for="riwayat-kategori">Jenis Tanggal</label>
+                        <select id="riwayat-kategori" name="kategori" class="form-control">
+                            <option value="tglentri" {{ $kategori === 'tglentri' ? 'selected' : '' }}>Tanggal Input</option>
+                            <option value="tglreservasi" {{ $kategori === 'tglreservasi' ? 'selected' : '' }}>Tanggal Kontrol / Reservasi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Pencarian</label>
 
                         <input
                             type="date"
@@ -573,21 +587,7 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                     </div>
                 </div>
             </form>
-            @if ($isSearched)
-            <div class="meta-row">
-                <span class="badge-orange-soft">
-                    Tanggal: {{ \Carbon\Carbon::parse($tanggalAktif)->format('d-m-Y') }}
-                </span>
-
-                <span class="badge-muted-soft">
-                    SIMRS: {{ $simrsMessage }}
-                </span>
-
-                <span class="badge-muted-soft">
-                    BPJS: {{ $bpjsMessage }}
-                </span>
-            </div>
-            @endif
+            {{-- Jhon | 2026-11-24 13:21 WITA | UBAH: hapus informasi respons yang ditandai. --}}
         </div>
 
         @if ($isSearched)
@@ -595,6 +595,8 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
             Total Semua Data
         </div>
 
+        {{-- Jhon | 2026-11-24 13:06 WITA | TAMBAH: hasil belum lengkap tidak berarti antrean pasti belum dibuat. --}}
+        {{-- Jhon | 2026-11-24 13:21 WITA | UBAH: hapus banner peringatan sesuai penandaan pengguna. --}}
         <div class="summary-grid">
             <div class="summary-box">
                 <div class="summary-label">Total Riwayat Kontrol</div>
@@ -621,36 +623,7 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
             </div>
         </div>
 
-        <div style="margin:22px 0 10px; color:#0f172a; font-weight:950; font-size:15px;">
-            Data Halaman Ini
-        </div>
-
-        <div class="summary-grid">
-            <div class="summary-box">
-                <div class="summary-label">Total Per Page</div>
-                <div class="summary-value">{{ $summaryPage['total'] ?? 0 }}</div>
-                <div class="summary-hint">Jumlah data di halaman aktif</div>
-            </div>
-
-            <div class="summary-box">
-                <div class="summary-label">Sudah Ada Antrean</div>
-                <div class="summary-value">{{ $summaryPage['sudah'] ?? 0 }}</div>
-                <div class="summary-hint">Sudah cocok di halaman ini</div>
-            </div>
-
-            <div class="summary-box">
-                <div class="summary-label">Belum Ada Antrean</div>
-                <div class="summary-value">{{ $summaryPage['belum'] ?? 0 }}</div>
-                <div class="summary-hint">Belum cocok di halaman ini</div>
-            </div>
-
-            <div class="summary-box">
-                <div class="summary-label">Persentase Page</div>
-                <div class="summary-value">{{ $summaryPage['persen'] ?? 0 }}%</div>
-                <div class="summary-hint">Persentase halaman aktif</div>
-            </div>
-        </div>
-
+        {{-- Jhon | 2026-11-24 13:21 WITA | UBAH: hapus ringkasan Data Halaman Ini; ringkasan total tetap. --}}
         <div class="bpjs-card">
             <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
                 <div>
@@ -712,7 +685,8 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                             <th>Keterangan</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    {{-- Jhon | 2026-11-24 13:16 WITA | TAMBAH: daftar scroll mempertahankan URL filter server. --}}
+                    <tbody id="riwayat-scroll-rows" data-next-url="{{ $list instanceof \Illuminate\Pagination\LengthAwarePaginator ? $list->nextPageUrl() : '' }}">
                         @foreach ($list as $i => $row)
                         @php
                         $kontrol = $row['kontrol'] ?? [];
@@ -819,6 +793,7 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                         @endphp
 
                         <tr
+                            data-row-key="{{ hash('sha256', json_encode($row)) }}"
                             data-status="{{ $sudahAntrean ? 'sudah' : 'belum' }}"
                             data-jenis-pasien="{{ $jenisPasienFilterValue }}"
                             data-search="{{ $rowSearch }}">
@@ -826,17 +801,10 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                                 {{ $list instanceof \Illuminate\Pagination\LengthAwarePaginator ? $list->firstItem() + $i : $i + 1 }}
                             </td>
                             <td>
-                                @if ($sudahAntrean)
-                                <span class="badge-success-soft">
-                                    <i class="fas fa-check-circle"></i>
-                                    Sudah
-                                </span>
-                                @else
-                                <span class="badge-warning-soft">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    Belum
-                                </span>
-                                @endif
+                                {{-- Jhon | 2026-11-24 12:57 WITA | UBAH: status menjadi tombol GET antrean per reservasi. --}}
+                                <button type="button" class="riwayat-check {{ $sudahAntrean ? 'badge-success-soft' : 'badge-warning-soft' }}" data-log="{{ $sudahAntrean ? '0' : '1' }}" data-booking="{{ $row['kodebooking'] ?: $noReservasi }}" title="Klik untuk cek antrean BPJS" {{ empty($row['kodebooking']) && empty($noReservasi) ? 'disabled' : '' }}>
+                                    {{ $sudahAntrean ? 'Sudah' : 'Belum' }} ⓘ
+                                </button>
                             </td>
 
                             <td>
@@ -931,6 +899,11 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
                     </tbody>
                 </table>
             </div>
+            {{-- Jhon | 2026-11-24 13:16 WITA | TAMBAH: sentinel selalu tersedia, retry hanya ketika gagal. --}}
+            <div id="riwayat-scroll-sentinel" style="padding:14px;text-align:center">
+                <span id="riwayat-scroll-status" role="status" aria-live="polite"></span>
+                <button id="riwayat-scroll-retry" type="button" hidden>Coba lagi</button>
+            </div>
             @if (
             $list instanceof \Illuminate\Pagination\LengthAwarePaginator
             && $list->hasPages()
@@ -947,7 +920,7 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
             $endPage = min($lastPage, $currentPage + 2);
             @endphp
 
-            <nav class="pagination-wrap" aria-label="Navigasi halaman">
+            <nav id="riwayat-pagination" class="pagination-wrap" aria-label="Navigasi halaman">
                 <div class="pagination-info">
                     Menampilkan
                     {{ $list->firstItem() ?? 0 }}
@@ -1067,6 +1040,12 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
     </div>
 </div>
 
+{{-- Jhon | 2026-11-24 12:57 WITA | TAMBAH: modal baca-saja detail antrean, tidak memperbarui status daftar tanpa refresh. --}}
+{{-- Jhon | 2026-11-24 14:20 WITA | UBAH: modal status antrean memakai drag bersama. --}}
+<dialog data-draggable-modal id="riwayat-antrean-modal" class="riwayat-dialog">
+    <div class="riwayat-dialog-header" data-drag-handle><h2>Detail Antrean BPJS</h2><button type="button" id="riwayat-antrean-close" aria-label="Tutup">×</button></div>
+    <div id="riwayat-antrean-result" class="riwayat-dialog-body" aria-live="polite"></div>
+</dialog>
 <script>
     const keywordFilter = document.getElementById('keywordFilter');
     const statusFilter = document.getElementById('statusFilter');
@@ -1118,5 +1097,129 @@ $isSearched = request()->filled('tanggal') || !empty($responseSimrs) || !empty($
     if (jenisPasienFilter) {
         jenisPasienFilter.addEventListener('change', applyRiwayatFilter);
     }
+
+// Jhon | 2026-11-24 12:57 WITA | TAMBAH: event delegation, abort request lama, dan render aman memakai textContent.
+(function () {
+    const modal = document.getElementById('riwayat-antrean-modal');
+    const result = document.getElementById('riwayat-antrean-result');
+    let activeRequest = null;
+    document.getElementById('riwayat-antrean-close').addEventListener('click', () => modal.close());
+    modal.addEventListener('close', () => { if (activeRequest) activeRequest.abort(); });
+    document.addEventListener('click', async event => {
+        const button = event.target.closest('.riwayat-check');
+        if (!button || button.disabled) return;
+        if (activeRequest) activeRequest.abort();
+        const request = new AbortController(); activeRequest = request;
+        // Jhon | 2026-11-24 14:04 WITA | UBAH: status Belum membuka data dan response log bridging.
+        const isLog = button.dataset.log === '1';
+        modal.querySelector('h2').textContent = isLog ? 'Log Bridging Antrean BPJS' : 'Detail Antrean BPJS';
+        result.textContent = isLog ? 'Memuat log bridging...' : 'Memuat antrean BPJS...';
+        if (!modal.open) modal.showModal();
+        try {
+            const url = new URL(isLog ? "{{ route('bpjs-antrean.riwayat-antrean-log') }}" : "{{ route('bpjs-antrean.riwayat-antrean-detail') }}");
+            const options = {headers: {'Accept': 'application/json'}, signal: request.signal};
+            if (isLog) {
+                options.method = 'POST';
+                options.headers['Content-Type'] = 'application/json';
+                options.headers['X-CSRF-TOKEN'] = document.querySelector('#monitoring-logout [name="_token"]').value;
+                options.body = JSON.stringify({kodebooking: button.dataset.booking});
+            } else url.searchParams.set('kodebooking', button.dataset.booking);
+            const response = await fetch(url, options);
+            if (response.status === 401) throw new Error('Sesi berakhir. Silakan login kembali.');
+            const json = await response.json();
+            if (!response.ok) throw new Error(json.message || 'Gagal mengecek antrean BPJS.');
+            if (activeRequest !== request) return;
+            result.textContent = '';
+            if (isLog) {
+                if (!Array.isArray(json.data) || !json.data.length) { result.textContent = 'Tidak ada log bridging untuk kode booking ini.'; return; }
+                json.data.forEach((item, index) => {
+                    const card = document.createElement('section'); card.className = 'riwayat-detail-item';
+                    const title = document.createElement('h3'); title.textContent = 'Log ' + (index + 1); card.appendChild(title);
+                    ['data', 'response'].forEach(key => {
+                        const label = document.createElement('h4'); label.textContent = key === 'data' ? 'Data' : 'Response';
+                        const pre = document.createElement('pre'); pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;max-height:300px;overflow:auto';
+                        pre.textContent = JSON.stringify(item[key], null, 2); card.append(label, pre);
+                    }); result.appendChild(card);
+                });
+                if (json.truncated) { const note = document.createElement('p'); note.textContent = 'Menampilkan maksimal 20 log.'; result.appendChild(note); }
+                return;
+            }
+            if (!Array.isArray(json.data) || !json.data.length) { result.textContent = 'Antrean untuk kode booking ini tidak ditemukan pada respons BPJS.'; return; }
+            const labels = {kodebooking:'Kode Booking', tanggal:'Tanggal', tanggalperiksa:'Tanggal Periksa', kodepoli:'Kode Poli', namapoli:'Poli', kodedokter:'Kode Dokter', namadokter:'Dokter', noantrean:'No Antrean', nomorantrean:'No Antrean', status:'Status Antrean', sumberdata:'Sumber', jampraktek:'Jam Praktik'};
+            json.data.forEach(item => {
+                const card = document.createElement('div'); card.className = 'riwayat-detail-item';
+                Object.entries(labels).forEach(([key,label]) => {
+                    if (!(key in item) || (typeof item[key] === 'object' && item[key] !== null)) return;
+                    const line = document.createElement('p'); line.textContent = label + ': ' + (item[key] ?? '-'); card.appendChild(line);
+                }); result.appendChild(card);
+            });
+        } catch (error) {
+            if (error.name !== 'AbortError' && activeRequest === request) result.textContent = error.message;
+        }
+    });
+})();
+
+// Jhon | 2026-11-24 13:16 WITA | TAMBAH: infinite scroll, deduplikasi, penghentian akhir, dan retry terkontrol.
+document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.getElementById('riwayat-scroll-rows');
+    const sentinel = document.getElementById('riwayat-scroll-sentinel');
+    const status = document.getElementById('riwayat-scroll-status');
+    const retry = document.getElementById('riwayat-scroll-retry');
+    if (!rows || !sentinel || !('IntersectionObserver' in window)) return;
+    const pagination = document.getElementById('riwayat-pagination');
+    if (pagination) pagination.hidden = true;
+    let next = rows.dataset.nextUrl || '';
+    let busy = false;
+    let failed = false;
+    const seen = new Set(Array.from(rows.querySelectorAll('[data-row-key]'), row => row.dataset.rowKey));
+    const observer = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting) && !failed) loadNext();
+    }, {rootMargin: '300px'});
+    function finish() {
+        if (!next) {
+            observer.disconnect();
+            status.textContent = seen.size ? 'Semua data telah dimuat.' : '';
+        }
+    }
+    async function loadNext() {
+        if (busy || !next) return;
+        busy = true;
+        failed = false;
+        retry.hidden = true;
+        status.textContent = 'Memuat data berikutnya...';
+        const requested = next;
+        try {
+            const response = await fetch(requested, {headers: {'Accept': 'text/html'}});
+            if (!response.ok) throw new Error('HTTP gagal');
+            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const incoming = doc.getElementById('riwayat-scroll-rows');
+            if (!incoming) throw new Error('Respons tidak sesuai');
+            const following = incoming.dataset.nextUrl || '';
+            if (following === requested) throw new Error('Pagination tidak maju');
+            incoming.querySelectorAll('[data-row-key]').forEach(row => {
+                if (!seen.has(row.dataset.rowKey)) {
+                    seen.add(row.dataset.rowKey);
+                    rows.appendChild(document.importNode(row, true));
+                }
+            });
+            if (typeof applyRiwayatFilter === 'function') applyRiwayatFilter();
+            next = following;
+            status.textContent = seen.size + ' data dimuat.';
+            observer.unobserve(sentinel);
+            if (next) observer.observe(sentinel);
+            finish();
+        } catch (error) {
+            failed = true;
+            status.textContent = 'Gagal memuat data berikutnya.';
+            retry.hidden = false;
+        } finally {
+            busy = false;
+        }
+    }
+    retry.addEventListener('click', loadNext);
+    if (next) observer.observe(sentinel);
+    finish();
+});
+
 </script>
 @endsection

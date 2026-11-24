@@ -164,3 +164,12 @@ Route::post('/logout', [\App\Http\Controllers\MonitoringAuthController::class, '
 
 // Jhon | 2026-11-23 20:48 WITA | TAMBAH: aktivitas terproteksi sesi dan CSRF.
 Route::post('/session/activity', [\App\Http\Controllers\MonitoringAuthController::class, 'activity'])->name('monitoring.activity');
+
+// Jhon | 2026-11-24 12:57 WITA | TAMBAH: endpoint baca antrean dari klik status, mengikuti middleware sesi web.
+Route::get('/bpjs-antrean/riwayat-antrean-detail', [BpjsAntreanMonitorController::class, 'riwayatAntreanDetail'])->middleware('throttle:30,1')->name('bpjs-antrean.riwayat-antrean-detail');
+
+// Jhon | 2026-11-24 14:04 WITA | TAMBAH: signed lookup diteruskan server, kredensial tidak dikirim ke browser.
+Route::post('/bpjs-antrean/riwayat-antrean-log', [BpjsAntreanMonitorController::class, 'riwayatAntreanLog'])->middleware('throttle:30,1')->name('bpjs-antrean.riwayat-antrean-log');
+
+// Jhon | 2026-11-24 14:15 WITA | TAMBAH: pencarian log surat kontrol baca-saja melalui POST.
+Route::post('/bpjs-antrean/surat-kontrol-log', [BpjsAntreanMonitorController::class, 'suratKontrolLog'])->middleware('throttle:30,1')->name('bpjs-antrean.surat-kontrol-log');

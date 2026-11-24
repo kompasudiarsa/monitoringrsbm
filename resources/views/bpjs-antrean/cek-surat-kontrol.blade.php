@@ -651,6 +651,27 @@
     /* Jhon | 2026-11-24 11:20 WITA | TAMBAH: pegangan drag hanya header, scroll body tetap normal. */
     #modalCekSuratKontrol .modal-header-custom { cursor: grab; touch-action: none; user-select: none; }
     #modalCekSuratKontrol .modal-header-custom.is-dragging { cursor: grabbing; }
+    /* Jhon | 2026-11-24 11:45 WITA | UBAH: header ringkas desktop/mobile tanpa mengubah tabel atau filter. */
+    .page { padding-top: 14px; }
+    .page .header-page { padding: 14px 18px; margin-bottom: 14px; border-radius: 14px; gap: 14px; }
+    .page .header-page .title { font-size: 21px; margin: 0; line-height: 1.3; }
+    .page .connection-status { margin-top: 7px; gap: 6px; }
+    .page .connection-chip { padding: 3px 8px; font-size: 11px; border-radius: 6px; }
+    .page .header-page .btn-back { padding: 9px 12px; font-size: 12px; }
+    @media(max-width:700px) {
+        .page .header-page { padding: 12px 14px; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .page .header-page > div { flex: 1 1 240px; min-width: 0; }
+        .page .header-page .title { font-size: 19px; }
+        .page .header-page .btn-back { align-self: center; }
+    }
+    /* Jhon | 2026-11-24 11:48 WITA | UBAH: satu permukaan kartu, tanpa kartu judul bertumpuk. */
+    .page .unified-filter-card { padding: 18px; }
+    .page .unified-filter-card .header-page { padding: 0 0 14px; margin: 0 0 16px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; background: none; box-shadow: none; }
+    .page .unified-header-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    @media(max-width:700px) {
+        .page .unified-filter-card { padding: 14px; }
+        .page .unified-filter-card .header-page > .unified-header-actions { flex: 0 1 auto; }
+    }
 </style>
 
 @php
@@ -662,38 +683,28 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
 @endphp
 
 <div class="page">
+    {{-- Jhon | 2026-11-24 11:48 WITA | PINDAH: satu kartu untuk judul, koneksi, dan isian filter. --}}
+    <form method="GET" action="{{ route('bpjs-antrean.cek-surat-kontrol') }}" class="filter-card unified-filter-card">
     <div class="header-page">
         <div>
             {{-- Jhon | 2026-11-23 21:01 WITA | UBAH: hierarki judul, deskripsi dan chip koneksi yang terpisah. --}}
-            <div class="hero-eyebrow">Rekonsiliasi SIMRS &amp; BPJS</div>
+            {{-- Jhon | 2026-11-24 11:45 WITA | UBAH: ringkas judul; hapus eyebrow dan deskripsi berulang. --}}
             <h1 class="title">Cek Surat Kontrol SIMRS vs BPJS</h1>
-            <div class="subtitle">Periksa keberadaan surat kontrol berdasarkan nomor kartu dan tanggal kontrol SIMRS. Jika tanggal kontrol kosong, digunakan tanggal reservasi.</div>
             <div class="connection-status" aria-label="Status respons layanan">
                 <span class="connection-chip {{ (string) $simrsCode === '200' ? 'is-ok' : 'is-error' }}"><b>SIMRS</b> {{ $simrsCode }} · {{ $simrsMessage }}</span>
                 <span class="connection-chip {{ (string) $bpjsCode === '200' ? 'is-ok' : 'is-error' }}"><b>BPJS</b> {{ $bpjsCode }} · {{ $bpjsMessage }}</span>
             </div>
         </div>
 
-        <a href="{{ route('bpjs-antrean.menu') }}" class="btn-back">
-            Kembali ke Menu
-        </a>
+        {{-- Jhon | 2026-11-24 11:48 WITA | PINDAH: tombol kembali dan Reset dalam header kartu gabungan. --}}
+        <div class="unified-header-actions">
+            <a href="{{ route('bpjs-antrean.menu') }}" class="btn-back">Kembali ke Menu</a>
+            {{-- Jhon | 2026-11-24 11:49 WITA | UBAH: hapus Reset duplikat; Bersihkan Filter tetap tersedia. --}}
+        </div>
     </div>
 
-    <form method="GET" action="{{ route('bpjs-antrean.cek-surat-kontrol') }}" class="filter-card">
-        <div class="filter-header">
-            <div>
-                <div class="filter-title">Filter Cek Surat Kontrol</div>
-                <div class="filter-subtitle">
-                    {{-- Jhon | 2026-11-23 20:34 WITA | UBAH: petunjuk hanya menyebut filter yang tersedia. --}}
-                    Filter data berdasarkan periode, status, poli, dokter, dan kata kunci.
-                </div>
-            </div>
-
-            <a href="{{ route('bpjs-antrean.cek-surat-kontrol') }}" class="btn-reset-filter">
-                Reset
-            </a>
-        </div>
-
+    {{-- Jhon | 2026-11-24 11:48 WITA | PINDAH: form filter kini membungkus judul di atas. --}}
+        {{-- Jhon | 2026-11-24 11:48 WITA | UBAH: hapus judul filter berulang; Reset dipindahkan ke aksi header. --}}
         <div class="filter-grid">
              <div class="filter-field">
                 <label>Kategori Tanggal SIMRS</label>
@@ -873,6 +884,15 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                                 <div class="kontrol-explanation">
                                     {{-- Jhon | 2026-11-23 20:22 WITA | UBAH: tampilkan alasan spesifik hasil pencocokan, bukan informasi umum pasien. --}}
                                     <b>Hasil pemeriksaan data</b>
+                                    {{-- Jhon | 2026-11-24 14:15 WITA | TAMBAH: log Data/Response memakai SEP asal; tidak mengganti alasan pembandingan. --}}
+                                    @if ($row['status'] === 'BELUM_ADA_SURAT_KONTROL')
+                                        @if (!empty($row['sep_simrs']))
+                                        <button type="button" class="btn-mini surat-log-check" data-sep="{{ $row['sep_simrs'] }}">Cek Log Bridging</button>
+                                        <div class="surat-log-result" role="status" aria-live="polite"></div>
+                                        @else
+                                        <p>Log bridging belum dapat dicek karena SEP asal SIMRS kosong.</p>
+                                        @endif
+                                    @endif
                                     @foreach ($row['alasan_pembandingan'] as $alasan)
                                     <p>{{ $alasan }}</p>
                                     @endforeach
@@ -997,6 +1017,11 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
         </div>
     </div>
 </div>
+{{-- Jhon | 2026-11-24 14:20 WITA | TAMBAH: modal status surat kontrol; isi dipindah dari details saat klik. --}}
+<dialog id="surat-status-modal" data-draggable-modal class="shared-status-modal">
+    <div class="shared-status-header" data-drag-handle><h2>Rincian Status Surat Kontrol</h2><button type="button" data-modal-close aria-label="Tutup">×</button></div>
+    <div id="surat-status-body" class="shared-status-body"></div>
+</dialog>
 @endsection
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -1324,5 +1349,56 @@ document.addEventListener('DOMContentLoaded', function () {
     retry.addEventListener('click', loadNext);
     if (next) observer.observe(sentinel);
     finish();
+});
+</script>
+
+<script>
+
+// Jhon | 2026-11-24 14:15 WITA | TAMBAH: delegasi klik agar log tetap bekerja setelah infinite scroll; render aman tanpa HTML dari API.
+document.addEventListener('click', async function (event) {
+    const button = event.target.closest('.surat-log-check');
+    if (!button || button.disabled) return;
+    const target = button.parentElement.querySelector('.surat-log-result');
+    const csrf = document.querySelector('#monitoring-logout [name="_token"]');
+    if (!target || !csrf) return;
+    button.disabled = true; target.textContent = 'Memuat log bridging...';
+    try {
+        const response = await fetch("{{ route('bpjs-antrean.surat-kontrol-log') }}", {
+            method: 'POST', headers: {'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf.value},
+            body: JSON.stringify({noSEP: button.dataset.sep})
+        });
+        if (response.status === 401 || response.status === 419) throw new Error('Sesi berakhir. Silakan login kembali.');
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.message || 'Gagal mengambil log surat kontrol.');
+        target.textContent = '';
+        if (!Array.isArray(json.data) || !json.data.length) { target.textContent = 'Tidak ada log surat kontrol sesuai SEP asal ini pada hasil pencarian API.'; return; }
+        json.data.forEach((item, index) => {
+            const section = document.createElement('section');
+            const title = document.createElement('b'); title.textContent = 'Log ' + (index + 1); section.appendChild(title);
+            ['data', 'response'].forEach(key => {
+                const label = document.createElement('p'); label.textContent = key === 'data' ? 'Data' : 'Response';
+                const pre = document.createElement('pre'); pre.textContent = JSON.stringify(item[key], null, 2);
+                pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#0f172a;color:#e2e8f0;padding:10px;border-radius:8px';
+                section.append(label, pre);
+            }); target.appendChild(section);
+        });
+        if (json.truncated) { const note = document.createElement('p'); note.textContent = 'Menampilkan maksimal 20 log.'; target.appendChild(note); }
+    } catch (error) { target.textContent = error.message; }
+    finally { button.disabled = false; }
+});
+</script>
+
+<script>
+// Jhon | 2026-11-24 14:20 WITA | TAMBAH: delegasi klik status mendukung baris infinite scroll, isi log tetap interaktif.
+document.addEventListener('click', function (event) {
+    const summary = event.target.closest('.kontrol-detail > summary');
+    if (!summary) return;
+    event.preventDefault();
+    const modal = document.getElementById('surat-status-modal');
+    const body = document.getElementById('surat-status-body');
+    const content = summary.parentElement.querySelector('.kontrol-explanation');
+    if (!modal || !body || !content) return;
+    body.replaceChildren(content.cloneNode(true));
+    modal.showModal();
 });
 </script>

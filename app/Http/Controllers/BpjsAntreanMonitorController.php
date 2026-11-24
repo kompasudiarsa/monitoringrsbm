@@ -2257,13 +2257,60 @@ class BpjsAntreanMonitorController extends Controller
             ->with('success', 'Proses batal antrean selesai.')
             ->with('hasil_batal', $hasil);
     }
+    // Jhon | 2026-11-24 12:57 WITA | TAMBAH: GET antrean per kode booking, respons whitelist tanpa operasi pendaftaran.
+    // Jhon | 2026-11-24 14:04 WITA | TAMBAH: lookup log baca-saja untuk status Belum, sesi dan CSRF mengikuti web middleware.
+    // Jhon | 2026-11-24 14:15 WITA | TAMBAH: log surat kontrol menurut SEP asal SIMRS; POST terproteksi sesi/CSRF.
+    public function suratKontrolLog(Request $request, \App\Services\AntreanBridgingLogService $service)
+    {
+        $input = $request->validate(['noSEP' => 'required|string|max:64|regex:/^[A-Za-z0-9.\-]+$/']);
+        try { return response()->json($service->suratKontrol($input['noSEP'])); }
+        catch (\DomainException $e) { return response()->json(['message' => $e->getMessage()], 502); }
+        catch (\Throwable $e) { return response()->json(['message' => 'Log bridging surat kontrol belum dapat diambil.'], 502); }
+    }
+
+    public function riwayatAntreanLog(Request $request, \App\Services\AntreanBridgingLogService $service)
+    {
+        $input = $request->validate(['kodebooking' => 'required|string|max:64|regex:/^[A-Za-z0-9.\-]+$/']);
+        try { return response()->json($service->lookup($input['kodebooking'])); }
+        // Jhon | 2026-11-24 14:06 WITA | UBAH: hanya tampilkan pesan diagnosis yang ditulis service; exception mentah tetap disembunyikan.
+        catch (\DomainException $e) { return response()->json(['message' => $e->getMessage()], 502); }
+        catch (\Throwable $e) { return response()->json(['message' => 'Log bridging belum dapat diambil. Periksa koneksi serta konfigurasi token/signature API pada server.'], 502); }
+    }
+
+    public function riwayatAntreanDetail(Request $request, BpjsAntreanService $bpjs)
+    {
+        $input = $request->validate(['kodebooking' => 'required|string|max:100|regex:/^[A-Za-z0-9._-]+$/']);
+        try {
+            $result = $bpjs->antreanKodeBooking(rawurlencode($input['kodebooking']));
+            $code = (string) data_get($result, 'metadata.code', data_get($result, 'metaData.code', ''));
+            if ($code !== '200') return response()->json(['message' => 'BPJS belum mengembalikan antrean untuk kode booking ini atau layanan sedang gagal.'], 502);
+            $data = data_get($result, 'response', []);
+            if (!is_array($data)) return response()->json(['message' => 'Respons antrean BPJS tidak dapat dibaca.'], 502);
+            if (isset($data['kodebooking'])) $data = [$data];
+            elseif (isset($data['list']) && is_array($data['list'])) $data = $data['list'];
+            $allowed = array_flip(['kodebooking', 'tanggal', 'tanggalperiksa', 'kodepoli', 'namapoli', 'kodedokter', 'namadokter', 'noantrean', 'nomorantrean', 'status', 'sumberdata', 'jampraktek']);
+            $rows = [];
+            foreach ($data as $item) {
+                if (!is_array($item)) continue;
+                if (strtolower(trim((string) ($item['kodebooking'] ?? ''))) !== strtolower($input['kodebooking'])) continue;
+                $rows[] = array_intersect_key($item, $allowed);
+            }
+            return response()->json(['data' => $rows]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Pengecekan antrean BPJS gagal. Silakan coba lagi.'], 502);
+        }
+    }
+
     public function cekRiwayatKontrolBpjs(
         Request $request,
         SimrsRiwayatKontrolService $simrs,
         BpjsAntreanService $bpjs
     ) {
 
-        $tanggal = $request->get('tanggal', now()->format('Y-m-d'));
+        // Jhon | 2026-11-24 13:06 WITA | TAMBAH: pilihan kategori tervalidasi; default tanggal input SIMRS.
+        $request->validate(['tanggal' => 'nullable|date_format:Y-m-d', 'kategori' => 'nullable|in:tglentri,tglreservasi']);
+        $kategori = $request->input('kategori', 'tglentri');
+        $tanggal = $request->get('tanggal', now()->format('Y-m-d')) ?: now()->format('Y-m-d');
         $tanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
 
         $jenisPasienFilter = strtoupper(
@@ -2302,11 +2349,11 @@ class BpjsAntreanMonitorController extends Controller
         $responseSimrs = $simrs->getRiwayatKontrol(
             $tanggal,
             $tanggal,
-            'tglreservasi',
+            $kategori,
             'undefined'
         );
 
-        $responseBpjs = $bpjs->pendaftaranTanggal($tanggal);
+        // Jhon | 2026-11-24 13:06 WITA | PINDAH: ambil antrean sesudah tanggal pelayanan hasil SIMRS tersedia.
 
         /*
         |--------------------------------------------------------------------------
@@ -2336,15 +2383,37 @@ class BpjsAntreanMonitorController extends Controller
         | Ambil Antrean BPJS
         |--------------------------------------------------------------------------
         */
-        $antreanBpjs = data_get($responseBpjs, 'response', []);
-
-        if (!is_array($riwayatKontrol)) {
-            $riwayatKontrol = [];
+        // Jhon | 2026-11-24 13:06 WITA | UBAH: antrean memakai tanggal pelayanan, bukan tanggal input SIMRS.
+        if (!is_array($riwayatKontrol)) $riwayatKontrol = [];
+        $tanggalBpjs = [];
+        $tanggalTidakLengkap = false;
+        if ($kategori === 'tglreservasi') {
+            $tanggalBpjs[] = $tanggal;
+        } else {
+            foreach ($riwayatKontrol as $item) {
+                $serviceDate = data_get($item, 'tanggalreservasi') ?: data_get($item, 'tglkontrol');
+                try {
+                    if (!$serviceDate) { $tanggalTidakLengkap = true; continue; }
+                    $tanggalBpjs[] = \Carbon\Carbon::parse($serviceDate)->format('Y-m-d');
+                } catch (\Throwable $e) { $tanggalTidakLengkap = true; }
+            }
         }
-
-        if (!is_array($antreanBpjs)) {
-            $antreanBpjs = [];
+        $tanggalBpjs = array_values(array_unique($tanggalBpjs));
+        $antreanBpjs = [];
+        $bpjsLengkap = !$tanggalTidakLengkap;
+        foreach ($tanggalBpjs as $serviceDate) {
+            $result = $bpjs->pendaftaranTanggal($serviceDate);
+            $code = (string) data_get($result, 'metadata.code', data_get($result, 'metaData.code', ''));
+            $items = data_get($result, 'response', []);
+            if ($code !== '200' || !is_array($items)) { $bpjsLengkap = false; continue; }
+            if (isset($items['list']) && is_array($items['list'])) $items = $items['list'];
+            if (isset($items['kodebooking'])) $items = [$items];
+            foreach ($items as $entry) if (is_array($entry)) $antreanBpjs[] = $entry;
         }
+        $responseBpjs = ['metadata' => [
+            'code' => $bpjsLengkap ? 200 : 502,
+            'message' => $bpjsLengkap ? 'Pengecekan berdasarkan tanggal pelayanan selesai' : 'Pengecekan belum lengkap; tanggal pelayanan kosong atau sebagian request BPJS gagal',
+        ], 'response' => $antreanBpjs];
 
         /*
         |--------------------------------------------------------------------------
@@ -2690,6 +2759,9 @@ class BpjsAntreanMonitorController extends Controller
             'bpjs-antrean.cek-riwayat-kontrol',
             compact(
                 'tanggal',
+                'kategori',
+                'tanggalBpjs',
+                'bpjsLengkap',
                 'jenisPasienFilter',
                 'statusAntreanFilter',
                 'responseSimrs',
