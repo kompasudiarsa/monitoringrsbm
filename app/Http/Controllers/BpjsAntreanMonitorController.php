@@ -742,6 +742,11 @@ class BpjsAntreanMonitorController extends Controller
         $hasil = [];
 
         foreach ($riwayatSimrs as $row) {
+            // Jhon | 2026-11-24 15:13 WITA | UBAH: syarat tampil norec terisi menggantikan kewajiban tglkontrol.
+            $norecWajib = data_get($row, 'norec');
+            if (!is_scalar($norecWajib) || in_array(strtoupper(trim((string) $norecWajib)), ['', '-', 'NULL', '0'], true)) {
+                continue;
+            }
             $noKartuSimrs = $this->cleanNoKartu(
                 data_get($row, 'nobpjs') ?: data_get($row, 'nokartu')
             );
