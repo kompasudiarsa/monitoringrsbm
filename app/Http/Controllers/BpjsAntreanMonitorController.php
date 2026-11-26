@@ -709,6 +709,15 @@ class BpjsAntreanMonitorController extends Controller
             $riwayatSimrs = [];
         }
 
+        // Jhon | 2026-11-25 20:08 WITA | TAMBAH: urut tanggal/jam pembuatan SIMRS ASC sebelum filter dan pagination; tanggal kosong di akhir.
+        $riwayatSimrs = collect($riwayatSimrs)->map(function ($row, $index) {
+            $created = data_get($row, 'tglentry');
+            $timestamp = is_string($created) && trim($created) !== '' ? strtotime($created) : false;
+            return ['row' => $row, 'time' => $timestamp === false ? PHP_INT_MAX : $timestamp, 'index' => $index];
+        })->sort(function ($a, $b) {
+            return ($a['time'] <=> $b['time']) ?: ($a['index'] <=> $b['index']);
+        })->pluck('row')->values()->all();
+
         // Jhon | 2026-11-23 19:38 WITA | TAMBAH: simpan validitas respons, jangan samakan gagal decoding dengan daftar kosong.
         $bpjsListValid = is_array($suratKontrolBpjs) && !isset($dataBpjs['decrypt_error']);
         if (!is_array($suratKontrolBpjs)) {

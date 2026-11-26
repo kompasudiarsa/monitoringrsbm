@@ -40,11 +40,39 @@ Route::prefix('sirs-online')
         |--------------------------------------------------------------------------
         */
 
+        // Jhon | 2026-11-25 19:53 WITA | UBAH: RL3.1 memakai API laporan baru, URL lama tetap tersedia.
         Route::get(
             '/rl-3-1',
-            [SirsOnlineController::class, 'rl31']
-        )->name('rl3-1');
+            [\App\Http\Controllers\SirsReportController::class, 'show']
+        )->defaults('report', 'rl3-1')->name('rl3-1');
 
+
+        // Jhon | 2026-11-25 19:51 WITA | TAMBAH: Route laporan sesuai katalog menu SIRS.
+        Route::get('/rl-3-2', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-2')->name('rl3-2');
+        Route::get('/rl-3-3', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-3')->name('rl3-3');
+        Route::get('/rl-3-4', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-4')->name('rl3-4');
+        Route::get('/rl-3-5', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-5')->name('rl3-5');
+        Route::get('/rl-3-6', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-6')->name('rl3-6');
+        Route::get('/rl-3-7', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-7')->name('rl3-7');
+        Route::get('/rl-3-8', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-8')->name('rl3-8');
+        Route::get('/rl-3-9', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-9')->name('rl3-9');
+        Route::get('/rl-3-10', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-10')->name('rl3-10');
+        Route::get('/rl-3-12', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-12')->name('rl3-12');
+        Route::get('/rl-3-14', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-14')->name('rl3-14');
+        Route::get('/rl-4-1', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl4-1')->name('rl4-1');
+        Route::get('/rl-4-2', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl4-2')->name('rl4-2');
+        Route::get('/rl-4-3', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl4-3')->name('rl4-3');
+        Route::get('/rl-5-1', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl5-1')->name('rl5-1');
+        Route::get('/rl-5-2', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl5-2')->name('rl5-2');
+        Route::get('/rl-5-3', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl5-3')->name('rl5-3');
+        Route::get('/rl-3-11', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-11')->name('rl3-11');
+        Route::get('/rl-3-13', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-13')->name('rl3-13');
+        Route::get('/rl-3-15', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-15')->name('rl3-15');
+        Route::get('/rl-3-16', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-16')->name('rl3-16');
+        Route::get('/rl-3-17', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-17')->name('rl3-17');
+        Route::get('/rl-3-18', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-18')->name('rl3-18');
+        Route::get('/rl-3-19', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-19')->name('rl3-19');
+        Route::get('/rl-3-11-detail', [\App\Http\Controllers\SirsReportController::class, 'show'])->defaults('report', 'rl3-11-detail')->name('rl3-11-detail');
     });
 Route::prefix('bpjs-monitoring')
     ->name('bpjs-monitoring.')

@@ -63,6 +63,8 @@ return [
         'warning_ms' => env('BPJS_MONITOR_WARNING_MS', 5000),
     ],
     'api_simrs' => [
+        // Jhon | 2026-11-25 21:03 WITA | TAMBAH: origin laporan dev dikonfirmasi pengguna 127.0.0.1:8000; fitur lain tetap.
+        'reports_base_url' => env('API_REPORT_BASE_URL', 'http://127.0.0.1:8000'),
         'base_url' => env(
             'API_BASE_URL',
             'http://127.0.0.1:8000'
