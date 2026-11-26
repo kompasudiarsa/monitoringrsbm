@@ -44,7 +44,8 @@ class AntreanBridgingLogService
         if (!$response->successful() || !is_array($json) || !isset($json['data']) || !is_array($json['data'])) throw new \DomainException('Format respons API log tidak sesuai JSON data. Periksa alamat endpoint dan redirect login pada API.');
         $rows = [];
         foreach ($json['data'] as $row) {
-            if (is_array($row)) $rows[] = ['data' => $this->clean($row['data'] ?? null), 'response' => $this->clean($row['response'] ?? null)];
+            // Jhon | 2026-11-27 07:31 WITA | UBAH: teruskan nama penginput scalar; jangan parse nama sebagai JSON atau mengambil akun sesi.
+            if (is_array($row)) $rows[] = ['user' => isset($row['user']) && is_string($row['user']) ? trim($row['user']) : null, 'data' => $this->clean($row['data'] ?? null), 'response' => $this->clean($row['response'] ?? null)];
         }
         return ['data' => $rows, 'truncated' => (bool) data_get($json, 'meta.truncated', false)];
     }

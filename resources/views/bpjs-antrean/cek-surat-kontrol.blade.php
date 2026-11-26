@@ -1377,6 +1377,10 @@ document.addEventListener('click', async function (event) {
         json.data.forEach((item, index) => {
             const section = document.createElement('section');
             const title = document.createElement('b'); title.textContent = 'Log ' + (index + 1); section.appendChild(title);
+            // Jhon | 2026-11-27 07:31 WITA | TAMBAH: nama dari log ditampilkan sebagai teks aman, termasuk saat baris hasil append.
+            const inputUser = document.createElement('p');
+            inputUser.textContent = 'User penginput: ' + (typeof item.user === 'string' && item.user.trim() ? item.user : 'Tidak tercatat');
+            section.appendChild(inputUser);
             ['data', 'response'].forEach(key => {
                 const label = document.createElement('p'); label.textContent = key === 'data' ? 'Data' : 'Response';
                 const pre = document.createElement('pre'); pre.textContent = JSON.stringify(item[key], null, 2);
