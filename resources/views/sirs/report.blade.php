@@ -45,6 +45,18 @@
 </div>
 <script>
 // Jhon | 2026-11-25 19:52 WITA | TAMBAH: Navigasi laporan tanpa kredensial browser, cegah submit berulang dan ekspor rincian aman.
+// Jhon | 2026-11-26 22:08 WITA | TAMBAH: perubahan bulan menyetel rentang kalender, termasuk Februari tahun kabisat; tanggal manual tetap boleh.
+const periodInput = document.querySelector('#report-form [name="periode"]');
+function syncReportDates() {
+    const start = document.querySelector('#report-form [name="tglAwal"]');
+    const end = document.querySelector('#report-form [name="tglAkhir"]');
+    if (!start || !end || !/^\d{4}-(0[1-9]|1[0-2])$/.test(periodInput.value)) return;
+    const [year, month] = periodInput.value.split('-').map(Number);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    start.value = periodInput.value + '-01';
+    end.value = periodInput.value + '-' + String(lastDay).padStart(2, '0');
+}
+periodInput.addEventListener('change', syncReportDates);
 const select = document.getElementById('report-select');
 select.addEventListener('change', () => { const url = new URL(select.value, location.origin); url.searchParams.set('periode', document.querySelector('[name="periode"]').value); location.assign(url); });
 document.getElementById('report-form').addEventListener('submit', function (event) { if (this.dataset.busy) { event.preventDefault(); return; } this.dataset.busy = '1'; document.getElementById('busy').style.display='inline'; });

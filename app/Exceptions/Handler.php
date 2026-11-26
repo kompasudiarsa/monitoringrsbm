@@ -7,6 +7,19 @@ use Throwable;
 
 class Handler extends ExceptionHandler
 {
+    // Jhon | 2026-11-26 22:02 WITA | TAMBAH: pulihkan navigasi ketika token sesi lama ditolak; jangan ulangi POST atau melewati CSRF.
+    public function render($request, Throwable $e)
+    {
+        $response = parent::render($request, $e);
+        if ($response->getStatusCode() !== 419) return $response;
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['message' => 'Sesi atau token halaman kedaluwarsa. Muat ulang halaman dan login kembali.'], 419);
+        }
+        return redirect()->route('login')
+            ->withErrors(['session' => 'Sesi atau token halaman kedaluwarsa. Silakan login kembali.'])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
     /**
      * A list of the exception types that are not reported.
      *

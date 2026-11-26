@@ -7,7 +7,12 @@ class MonitoringAuthController extends Controller
 {
     public function form(Request $request)
     {
-        if ($request->session()->get('monitoring_auth.expires_at', 0) > time()) return redirect('/');
+        // Jhon | 2026-11-26 22:02 WITA | UBAH: samakan validitas login dengan middleware agar sesi idle tidak berputar login-dashboard.
+        $identity = $request->session()->get('monitoring_auth');
+        if (is_array($identity) && !empty($identity['id'])
+            && ($identity['expires_at'] ?? 0) > time()
+            && time() - ($identity['last_activity'] ?? 0) < 1800) return redirect('/');
+        $request->session()->forget('monitoring_auth');
         // Jhon | 2026-11-23 20:48 WITA | TAMBAH: challenge acak lima menit, jawaban hanya di sesi server.
         $left = random_int(2, 15);
         $right = random_int(2, 15);
