@@ -3,11 +3,13 @@
 
 @section('content')
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .bpjs-home {
         min-height: 100vh;
         background:
-            radial-gradient(circle at top left, rgba(249, 115, 22, .16), transparent 32%),
-            linear-gradient(180deg, #fff7ed 0%, #f8fafc 38%, #f8fafc 100%);
+            radial-gradient(circle at top left, rgba(2,132,199, .16), transparent 32%),
+            linear-gradient(180deg, #f0f9ff 0%, #f8fafc 38%, #f8fafc 100%);
         padding: 28px;
     }
 
@@ -30,8 +32,8 @@
         gap: 8px;
         padding: 7px 12px;
         border-radius: 999px;
-        background: #ffedd5;
-        color: #c2410c;
+        background: #e0f2fe;
+        color: #0369a1;
         font-size: 12px;
         font-weight: 900;
         margin-bottom: 12px;
@@ -122,7 +124,7 @@
         width: 130px;
         height: 130px;
         border-radius: 999px;
-        background: rgba(249, 115, 22, .13);
+        background: rgba(2,132,199, .13);
     }
 
     .menu-icon {
@@ -132,7 +134,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         color: #fff;
         font-size: 22px;
         margin-bottom: 16px;
@@ -165,7 +167,7 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        color: #ea580c;
+        color: #0369a1;
         font-size: 13px;
         font-weight: 950;
         z-index: 1;
@@ -222,7 +224,7 @@
         padding: 0 16px;
         font-weight: 950;
         color: #fff;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         white-space: nowrap;
     }
 

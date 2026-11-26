@@ -2,11 +2,13 @@
 
 @section('content')
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .bpjs-page {
         min-height: 100vh;
         background:
-            radial-gradient(circle at top left, rgba(249, 115, 22, .16), transparent 32%),
-            linear-gradient(180deg, #fff7ed 0%, #f8fafc 38%, #f8fafc 100%);
+            radial-gradient(circle at top left, rgba(2,132,199, .16), transparent 32%),
+            linear-gradient(180deg, #f0f9ff 0%, #f8fafc 38%, #f8fafc 100%);
         padding: 28px;
     }
 
@@ -20,8 +22,8 @@
         align-items: center;
         padding: 7px 12px;
         border-radius: 999px;
-        background: #ffedd5;
-        color: #c2410c;
+        background: #e0f2fe;
+        color: #0369a1;
         font-size: 12px;
         font-weight: 900;
         margin-bottom: 12px;
@@ -92,8 +94,8 @@
     }
 
     .form-control:focus {
-        border-color: #f97316;
-        box-shadow: 0 0 0 4px rgba(249, 115, 22, .12);
+        border-color: #0284c7;
+        box-shadow: 0 0 0 4px rgba(2,132,199, .12);
     }
 
     .btn-orange,
@@ -116,7 +118,7 @@
     .btn-orange {
         border: 0;
         color: #fff;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         box-shadow: 0 10px 20px rgba(234, 88, 12, .22);
     }
 
@@ -256,7 +258,7 @@
     }
 
     .searchable-option:hover {
-        background: #fff7ed;
+        background: #f0f9ff;
     }
 
     .searchable-option.disabled {
@@ -285,7 +287,7 @@
 
     .searchable-loading {
         padding: 13px;
-        color: #ea580c;
+        color: #0369a1;
         font-size: 13px;
         font-weight: 800;
     }

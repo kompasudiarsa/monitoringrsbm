@@ -3,6 +3,8 @@
 @section('content')
 
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .monitor-stack {
         display: grid;
         gap: 16px;

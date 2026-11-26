@@ -4,6 +4,8 @@
 
 @section('content')
     <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
         .schedule-filter {
             display: grid;
             grid-template-columns: 180px minmax(260px, 1fr) minmax(280px, 1fr) auto;

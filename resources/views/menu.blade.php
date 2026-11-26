@@ -180,8 +180,9 @@
     }
 
     .card-sirs {
-        --accent: #7c3aed;
-        --soft: #ede9fe;
+        /* Jhon | 2026-11-26 13:27 WITA | UBAH: identitas SIRS amber, bukan ungu. */
+        --accent: #b45309;
+        --soft: #fef3c7;
     }
 
     @media (max-width: 900px) {

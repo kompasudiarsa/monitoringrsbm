@@ -2,10 +2,12 @@
 
 @section('content')
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .page {
         min-height: 100vh;
         background:
-            radial-gradient(circle at top left, rgba(249, 115, 22, .10), transparent 28%),
+            radial-gradient(circle at top left, rgba(2,132,199, .10), transparent 28%),
             #f8fafc;
         padding: 24px;
     }
@@ -133,8 +135,8 @@
 
     .filter-field input:focus,
     .filter-field select:focus {
-        border-color: #f97316;
-        box-shadow: 0 0 0 4px rgba(249, 115, 22, .13);
+        border-color: #0284c7;
+        box-shadow: 0 0 0 4px rgba(2,132,199, .13);
         background: #fff;
     }
 
@@ -161,7 +163,7 @@
         color: #fff;
         font-size: 13px;
         font-weight: 950;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         cursor: pointer;
         box-shadow: 0 12px 24px rgba(234, 88, 12, .22);
     }
@@ -217,7 +219,7 @@
         width: 80px;
         height: 80px;
         border-radius: 999px;
-        background: rgba(249, 115, 22, .10);
+        background: rgba(2,132,199, .10);
     }
 
     .stat-label {
@@ -320,7 +322,7 @@
         font-size: 12px;
         font-weight: 900;
         color: #fff;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         cursor: pointer;
         white-space: nowrap;
     }
@@ -586,17 +588,17 @@
     }
 
     .page-btn:hover {
-        background: #fff7ed;
-        color: #c2410c;
-        border-color: #fed7aa;
+        background: #f0f9ff;
+        color: #0369a1;
+        border-color: #bae6fd;
         text-decoration: none;
     }
 
     .page-btn.active {
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         color: #fff;
         border-color: transparent;
-        box-shadow: 0 10px 20px rgba(249, 115, 22, .22);
+        box-shadow: 0 10px 20px rgba(2,132,199, .22);
     }
 
     .page-btn.disabled {

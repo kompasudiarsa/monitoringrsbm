@@ -2,6 +2,8 @@
 
 @section('content')
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .page {
         min-height: 100vh;
         background: #f8fafc;
@@ -43,8 +45,8 @@
     }
 
     .input:focus {
-        border-color: #f97316;
-        box-shadow: 0 0 0 4px rgba(249, 115, 22, .12);
+        border-color: #0284c7;
+        box-shadow: 0 0 0 4px rgba(2,132,199, .12);
     }
 
     .actions {
@@ -56,7 +58,7 @@
     .btn-main {
         border: 0;
         border-radius: 16px;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         color: #fff;
         height: 46px;
         padding: 0 18px;

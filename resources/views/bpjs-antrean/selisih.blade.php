@@ -2,6 +2,8 @@
 
 @section('content')
 <style>
+/* Jhon | 2026-11-26 13:27 WITA | UBAH: aksen biru BPJS selaras dashboard; warna status semantik dipertahankan. */
+
     .selisih-page {
         max-width: 1400px;
         margin: 0 auto;
@@ -70,7 +72,7 @@
         min-height: 44px;
         padding: 0 18px;
         font-weight: 900;
-        background: linear-gradient(135deg, #f97316, #ea580c);
+        background: linear-gradient(135deg, #0284c7, #0369a1);
         color: white;
     }
 
@@ -108,7 +110,7 @@
         top: -30px;
         width: 90px;
         height: 90px;
-        background: rgba(249, 115, 22, .13);
+        background: rgba(2,132,199, .13);
         border-radius: 999px;
     }
 
@@ -217,16 +219,16 @@
 }
 
 .selisih-tab-btn:hover {
-    background: #fff7ed;
-    color: #c2410c;
-    border-color: #fed7aa;
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
 }
 
 .selisih-tab-btn.active {
-    background: linear-gradient(135deg, #f97316, #ea580c);
+    background: linear-gradient(135deg, #0284c7, #0369a1);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 10px 24px rgba(249, 115, 22, .25);
+    box-shadow: 0 10px 24px rgba(2,132,199, .25);
 }
 
 .selisih-tab-count {
