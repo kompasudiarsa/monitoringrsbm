@@ -10,7 +10,8 @@ class SuratKontrolVerificationController extends Controller
     public function save(Request $request)
     {
         // Jhon | 2026-11-27 11:21 WITA | UBAH: terima kategori Lainnya dan Kontrol Internal sesuai pilihan form.
-        $input = $request->validate(['reservation_token'=>'required|string|max:4096','permasalahan'=>'required|in:rujukan,sep,jadwal_poli,lainnya,kontrol_internal','keterangan'=>'nullable|string|max:2000']);
+        // Jhon | 2026-11-27 12:28 WITA | TAMBAH: pilihan eksplisit Ada/Tidak wajib, tanpa default untuk catatan lama.
+        $input = $request->validate(['reservation_token'=>'required|string|max:4096','surat_kontrol_bpjs'=>'required|in:ada,tidak','permasalahan'=>'required|in:rujukan,sep,jadwal_poli,lainnya,kontrol_internal','keterangan'=>'nullable|string|max:2000']);
         try { $grant = json_decode(Crypt::decryptString($input['reservation_token']), true); }
         catch (\Throwable $e) { return response()->json(['message'=>'Identitas reservasi tidak valid. Muat ulang daftar.'],422); }
         if (!is_array($grant) || ($grant['expires'] ?? 0) < time()
@@ -20,6 +21,8 @@ class SuratKontrolVerificationController extends Controller
         }
         try {
             SuratKontrolVerification::updateOrCreate(['norec'=>$grant['norec']], [
+                // Jhon | 2026-11-27 12:28 WITA | TAMBAH: simpan jawaban petugas terpisah dari status API BPJS.
+                'surat_kontrol_bpjs'=>$input['surat_kontrol_bpjs'],
                 'permasalahan'=>$input['permasalahan'], 'keterangan'=>$input['keterangan'] ?? null,
                 'verified_by'=>(string) $request->session()->get('monitoring_auth.id'),
                 'verified_by_name'=>(string) $request->session()->get('monitoring_auth.name'),

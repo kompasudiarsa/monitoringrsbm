@@ -754,7 +754,8 @@ class BpjsAntreanMonitorController extends Controller
         $verificationRecords = null;
         try {
             $verificationRecords = \App\Models\SuratKontrolVerification::whereIn('norec', collect($riwayatSimrs)->pluck('norec')->filter()->unique()->values()->all())
-                ->get(['norec','permasalahan','keterangan'])->keyBy('norec');
+                // Jhon | 2026-11-27 12:28 WITA | UBAH: baca field surat BPJS agar jawaban tersimpan terisi saat form dibuka ulang.
+                ->get(['norec','permasalahan','keterangan','surat_kontrol_bpjs'])->keyBy('norec');
         } catch (\Throwable $e) { /* Status tidak diketahui sampai tabel/koneksi siap. */ }
 
         foreach ($riwayatSimrs as $row) {
@@ -862,6 +863,8 @@ class BpjsAntreanMonitorController extends Controller
                 // Jhon | 2026-11-27 11:14 WITA | TAMBAH: null membedakan gagal baca dari belum tersimpan.
                 'verification_saved' => $verificationRecords === null ? null : $verificationRecords->has((string) $norecWajib),
                 'verification_problem' => $verificationRecords === null ? null : data_get($verificationRecords->get((string) $norecWajib), 'permasalahan'),
+                // Jhon | 2026-11-27 12:28 WITA | TAMBAH: null berarti catatan lama belum menjawab.
+                'verification_bpjs' => $verificationRecords === null ? null : data_get($verificationRecords->get((string) $norecWajib), 'surat_kontrol_bpjs'),
                 'verification_note' => $verificationRecords === null ? null : data_get($verificationRecords->get((string) $norecWajib), 'keterangan'),
                 'status' => $status,
                 'status_label' => $statusLabel,
@@ -930,6 +933,13 @@ class BpjsAntreanMonitorController extends Controller
             })
             ->when($statusFilter !== 'ALL', function ($items) use ($statusFilter) {
                 // Jhon | 2026-11-27 11:35 WITA | TAMBAH: dua filter verifikasi sebelum hitungan/pagination, null tidak dianggap belum.
+                // Jhon | 2026-11-27 12:34 WITA | TAMBAH: filter jawaban petugas tersimpan, terpisah dari pencocokan otomatis BPJS.
+                if (in_array($statusFilter, ['VERIFIKASI_SURAT_ADA','VERIFIKASI_SURAT_TIDAK'], true)) {
+                    $answer = $statusFilter === 'VERIFIKASI_SURAT_ADA' ? 'ada' : 'tidak';
+                    return $items->filter(function ($item) use ($answer) {
+                        return ($item['verification_saved'] ?? null) === true && ($item['verification_bpjs'] ?? null) === $answer;
+                    });
+                }
                 if (in_array($statusFilter, ['BELUM_SURAT_SUDAH_VERIFIKASI', 'BELUM_SURAT_BELUM_VERIFIKASI'], true)) {
                     $verified = $statusFilter === 'BELUM_SURAT_SUDAH_VERIFIKASI';
                     return $items->filter(function ($item) use ($verified) {
