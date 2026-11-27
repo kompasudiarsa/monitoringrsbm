@@ -1,0 +1,7 @@
+{{-- Jhon | 2026-11-27 16:07 WITA | TAMBAH: cetak seluruh hasil filter, PDF melalui dialog cetak browser. --}}
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Monitoring Surat Kontrol</title><style>
+body{font:12px Arial,sans-serif;color:#0f172a;margin:20px}table{border-collapse:collapse;width:100%;font-size:9px}th,td{border:1px solid #cbd5e1;padding:5px;vertical-align:top;overflow-wrap:anywhere}th{background:#e0f2fe}thead{display:table-header-group}h1{font-size:20px}button{padding:10px 16px;background:#0284c7;color:white;border:0;border-radius:8px;cursor:pointer}.tools{margin-bottom:16px}@page{size:A3 landscape;margin:10mm}@media print{.tools{display:none}body{margin:0}tr{break-inside:avoid}}
+</style></head><body><div class="tools"><button type="button" onclick="window.print()">Cetak / Simpan sebagai PDF</button><p>Pilih “Simpan sebagai PDF” pada tujuan printer untuk mengunduh PDF.</p></div>
+<h1>Monitoring Surat Kontrol SIMRS VS BPJS</h1><p>Periode: {{ $filters['dari'] }} s/d {{ $filters['sampai'] }} · Kategori: {{ $filters['kategori'] }} · Status: {{ $filters['status'] }} · {{ count($rows) }} data</p>
+<p>Poli: {{ $filters['poli'] ?: 'Semua' }} · Dokter: {{ $filters['dokter'] ?: 'Semua' }} · Keyword: {{ $filters['keyword'] ?: '-' }}</p>
+<table><thead><tr>@foreach($headers as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($rows as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td colspan="17">Tidak ada data sesuai filter.</td></tr>@endforelse</tbody></table></body></html>

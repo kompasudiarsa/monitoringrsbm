@@ -11,7 +11,8 @@ class SuratKontrolVerificationController extends Controller
     {
         // Jhon | 2026-11-27 11:21 WITA | UBAH: terima kategori Lainnya dan Kontrol Internal sesuai pilihan form.
         // Jhon | 2026-11-27 12:28 WITA | TAMBAH: pilihan eksplisit Ada/Tidak wajib, tanpa default untuk catatan lama.
-        $input = $request->validate(['reservation_token'=>'required|string|max:4096','surat_kontrol_bpjs'=>'required|in:ada,tidak','permasalahan'=>'required|in:rujukan,sep,jadwal_poli,lainnya,kontrol_internal','keterangan'=>'nullable|string|max:2000']);
+        // Jhon | 2026-11-27 16:42 WITA | UBAH: terima permasalahan rujukan habis dan rujuk internal.
+        $input = $request->validate(['reservation_token'=>'required|string|max:4096','surat_kontrol_bpjs'=>'required|in:ada,tidak','permasalahan'=>'required|in:rujukan,sep,jadwal_poli,lainnya,kontrol_internal,rujukan_habis,rujuk_internal','keterangan'=>'nullable|string|max:2000']);
         try { $grant = json_decode(Crypt::decryptString($input['reservation_token']), true); }
         catch (\Throwable $e) { return response()->json(['message'=>'Identitas reservasi tidak valid. Muat ulang daftar.'],422); }
         if (!is_array($grant) || ($grant['expires'] ?? 0) < time()

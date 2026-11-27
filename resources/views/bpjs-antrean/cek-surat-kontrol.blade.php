@@ -822,6 +822,11 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
 {{-- Jhon | 2026-11-23 18:22 WITA | UBAH: hapus pilihan jumlah data; muat bertahap saat scroll. --}}
         </div>
 
+        {{-- Jhon | 2026-11-27 16:07 WITA | TAMBAH: tautan memakai filter yang sudah diterapkan, buang page/export lama; PDF lewat dialog cetak. --}}
+        <div class="filter-actions" aria-label="Ekspor laporan">
+            <a class="btn-filter-secondary" href="{{ route('bpjs-antrean.cek-surat-kontrol', array_merge(request()->except(['page','export']), ['export'=>'excel'])) }}">Unduh Excel (.xml)</a>
+            <a class="btn-filter-secondary" target="_blank" rel="noopener" href="{{ route('bpjs-antrean.cek-surat-kontrol', array_merge(request()->except(['page','export']), ['export'=>'print'])) }}">Cetak / PDF</a>
+        </div>
         <div class="filter-actions">
             <button type="submit" class="btn-filter-primary">
                 Terapkan Filter
@@ -946,6 +951,8 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                                 {{-- Jhon | 2026-11-27 11:09 WITA | UBAH: sembunyikan verifikasi jika surat sudah ada atau pemeriksaan BPJS belum valid. --}}
                                 @if(!empty($row['verification_token']))
                                 <button type="button" class="btn-mini surat-verify" data-verified="{{ ($row['verification_saved'] ?? null) === null ? 'unknown' : ($row['verification_saved'] ? 'yes' : 'no') }}" data-bpjs="{{ $row['verification_bpjs'] ?? '' }}" data-problem="{{ $row['verification_problem'] ?? '' }}" data-note="{{ $row['verification_note'] ?? '' }}" data-token="{{ $row['verification_token'] ?? '' }}" data-norec="{{ $row['verification_norec'] ?? '' }}" @if(empty($row['verification_token'])) disabled @endif>{{ ($row['verification_saved'] ?? null) === null ? 'Status verifikasi belum terbaca' : ($row['verification_saved'] ? 'Sudah diverifikasi' : 'Belum diverifikasi') }}</button>
+                                {{-- Jhon | 2026-11-27 16:42 WITA | TAMBAH: label permasalahan di samping verifikasi tersimpan. --}}
+                                <span class="verification-problem-label" style="display:inline-block;margin-left:6px;color:#334155;font-weight:600" @if(($row['verification_saved'] ?? false) !== true) hidden @endif>{{ ['rujukan'=>'Rujukan','sep'=>'SEP','jadwal_poli'=>'Jadwal Poli','lainnya'=>'Lainnya','kontrol_internal'=>'Kontrol Internal','rujukan_habis'=>'Rujukan Habis','rujuk_internal'=>'Rujuk Internal'][$row['verification_problem'] ?? ''] ?? '' }}</span>
                                 @endif
                             {{-- Jhon | 2026-11-27 12:34 WITA | TAMBAH: tampilkan tindak lanjut hasil verifikasi Ada pada tabel. --}}
                             <p class="verification-bpjs-warning verification-row-warning" @if(($row['verification_saved'] ?? false) !== true || ($row['verification_bpjs'] ?? '') !== 'ada') hidden @endif>⚠ Harus dibuatkan surat kontrol.</p>
@@ -956,18 +963,20 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                                     <b>Hasil pemeriksaan data</b>
                                     {{-- Jhon | 2026-11-24 14:15 WITA | TAMBAH: log Data/Response memakai SEP asal; tidak mengganti alasan pembandingan. --}}
                                     @if ($row['status'] === 'BELUM_ADA_SURAT_KONTROL')
-                                        @if (!empty($row['sep_simrs']))
-                                        <button type="button" class="btn-mini surat-log-check" data-sep="{{ $row['sep_simrs'] }}">Cek Log Bridging</button>
-                                        <div class="surat-log-result" role="status" aria-live="polite"></div>
-                                        @else
-                                        <p>Log bridging belum dapat dicek karena SEP asal SIMRS kosong.</p>
-                                        @endif
+                                        {{-- Jhon | 2026-11-27 16:18 WITA | TAMBAH: konteks rangkuman SEP/rujukan saat status dibuka. --}}
+                                        <section class="surat-clinical-summary" data-sep="{{ $row['sep_simrs'] ?? '' }}" data-poli="{{ $row['poli'] ?? '' }}" data-reservasi="{{ $row['tanggalreservasi_tampilan'] ?? '' }}" aria-live="polite" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;margin:10px 0"></section>
+
+                                        {{-- Jhon | 2026-11-27 16:32 WITA | UBAH: log langsung dimuat dalam rangkuman tanpa tombol cek. --}}
                                     @endif
+                                    {{-- Jhon | 2026-11-27 16:36 WITA | UBAH: hapus endif berlebih setelah penghapusan tombol log. --}}
+                                    {{-- Jhon | 2026-11-27 16:24 WITA | UBAH: uraian lama disembunyikan pada status belum ada surat; diganti rangkuman dan saran. --}}
+                                    @if ($row['status'] !== 'BELUM_ADA_SURAT_KONTROL')
                                     @foreach ($row['alasan_pembandingan'] as $alasan)
                                     <p>{{ $alasan }}</p>
                                     @endforeach
                                     <p>Tanggal SIMRS memakai {{ !empty($row['tanggal_pembanding']) ? $row['tanggal_pembanding'] : '(kosong/tidak valid)' }}; sumbernya tanggal kontrol, atau tanggal reservasi jika tanggal kontrol kosong.</p>
                                     <p>Yang dibandingkan hanya nomor kartu dan tanggal. Poli, SEP, dokter, dan kesamaan nomor surat tidak diperiksa.</p>
+                                    @endif
 
                                 </div>
                             </details>
@@ -1119,7 +1128,8 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
 </div></fieldset>
 {{-- Jhon | 2026-11-27 12:34 WITA | TAMBAH: peringatan saat Ada dipilih, tanpa membuat surat otomatis. --}}
 <p id="verification-bpjs-warning" class="verification-bpjs-warning" role="status" hidden>⚠ Harus dibuatkan surat kontrol.</p>
-<label>Permasalahan <select name="permasalahan" required><option value="">Pilih permasalahan</option value="rujukan">Rujukan</option><option value="sep">SEP</option><option value="jadwal_poli">Jadwal Poli</option><option value="lainnya">Lainnya</option><option value="kontrol_internal">Kontrol Internal</option></select></label>
+{{-- Jhon | 2026-11-27 16:42 WITA | UBAH: tambah pilihan rujukan habis dan rujuk internal. --}}
+<label>Permasalahan <select name="permasalahan" required><option value="">Pilih permasalahan</option value="rujukan">Rujukan</option><option value="sep">SEP</option><option value="jadwal_poli">Jadwal Poli</option><option value="lainnya">Lainnya</option><option value="kontrol_internal">Kontrol Internal</option><option value="rujukan_habis">Rujukan Habis</option><option value="rujuk_internal">Rujuk Internal</option></select></label>
 <label>Catatan / Keterangan <textarea name="keterangan" maxlength="2000" rows="4" placeholder="Tuliskan hasil pemeriksaan atau kendala yang ditemukan…"></textarea></label>
 <div class="verification-footer"><button type="submit" class="btn-mini">Simpan Verifikasi</button></div><p id="verification-feedback" role="status" aria-live="polite"></p>
 </form></dialog>
@@ -1167,6 +1177,10 @@ document.getElementById('surat-verification-form').addEventListener('submit', as
             const warning=item.closest('td').querySelector('.verification-row-warning');
             if (warning) warning.hidden=item.dataset.bpjs !== 'ada';
             item.dataset.problem=this.elements.permasalahan.value; item.dataset.note=this.elements.keterangan.value;
+            // Jhon | 2026-11-27 16:42 WITA | TAMBAH: label baru langsung diperbarui sesudah simpan berhasil.
+            const problemLabel=item.closest('td').querySelector('.verification-problem-label');
+            if (problemLabel) { problemLabel.textContent=this.elements.permasalahan.options[this.elements.permasalahan.selectedIndex].text; problemLabel.hidden=false; }
+
         });
         feedback.textContent=json.message;
         // Jhon | 2026-11-27 11:33 WITA | UBAH: tutup hanya setelah server memastikan verifikasi tersimpan, bukan saat request dimulai.
@@ -1540,42 +1554,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <script>
 
-// Jhon | 2026-11-24 14:15 WITA | TAMBAH: delegasi klik agar log tetap bekerja setelah infinite scroll; render aman tanpa HTML dari API.
-document.addEventListener('click', async function (event) {
-    const button = event.target.closest('.surat-log-check');
-    if (!button || button.disabled) return;
-    const target = button.parentElement.querySelector('.surat-log-result');
-    const csrf = document.querySelector('#monitoring-logout [name="_token"]');
-    if (!target || !csrf) return;
-    button.disabled = true; target.textContent = 'Memuat log bridging...';
-    try {
-        const response = await fetch("{{ route('bpjs-antrean.surat-kontrol-log') }}", {
-            method: 'POST', headers: {'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf.value},
-            body: JSON.stringify({noSEP: button.dataset.sep})
-        });
-        if (response.status === 401 || response.status === 419) throw new Error('Sesi berakhir. Silakan login kembali.');
-        const json = await response.json();
-        if (!response.ok) throw new Error(json.message || 'Gagal mengambil log surat kontrol.');
-        target.textContent = '';
-        if (!Array.isArray(json.data) || !json.data.length) { target.textContent = 'Tidak ada log surat kontrol sesuai SEP asal ini pada hasil pencarian API.'; return; }
-        json.data.forEach((item, index) => {
-            const section = document.createElement('section');
-            const title = document.createElement('b'); title.textContent = 'Log ' + (index + 1); section.appendChild(title);
-            // Jhon | 2026-11-27 07:31 WITA | TAMBAH: nama dari log ditampilkan sebagai teks aman, termasuk saat baris hasil append.
-            const inputUser = document.createElement('p');
-            inputUser.textContent = 'User penginput: ' + (typeof item.user === 'string' && item.user.trim() ? item.user : 'Tidak tercatat');
-            section.appendChild(inputUser);
-            ['data', 'response'].forEach(key => {
-                const label = document.createElement('p'); label.textContent = key === 'data' ? 'Data' : 'Response';
-                const pre = document.createElement('pre'); pre.textContent = JSON.stringify(item[key], null, 2);
-                pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#0f172a;color:#e2e8f0;padding:10px;border-radius:8px';
-                section.append(label, pre);
-            }); target.appendChild(section);
-        });
-        if (json.truncated) { const note = document.createElement('p'); note.textContent = 'Menampilkan maksimal 20 log.'; target.appendChild(note); }
-    } catch (error) { target.textContent = error.message; }
-    finally { button.disabled = false; }
-});
+// Jhon | 2026-11-27 16:32 WITA | PINDAH: pengambilan log otomatis ke loadSuratSummary.
 </script>
 
 <script>
@@ -1590,5 +1569,77 @@ document.addEventListener('click', function (event) {
     if (!modal || !body || !content) return;
     body.replaceChildren(content.cloneNode(true));
     modal.showModal();
+    // Jhon | 2026-11-27 16:18 WITA | TAMBAH: hasil terikat ke salinan popup, bukan baris/popup berikutnya.
+    const target = body.querySelector('.surat-clinical-summary');
+    if (target) loadSuratSummary(target);
 });
+
+// Jhon | 2026-11-27 16:18 WITA | TAMBAH: saran administratif, bukan penetapan status surat atau diagnosis.
+// Jhon | 2026-11-27 16:32 WITA | UBAH: hanya selisih hari kalender, tanpa klasifikasi/kesimpulan.
+function suratSummaryDays(reservasi, rujukan) {
+    const date = value => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+        const stamp = Date.parse(value + 'T00:00:00Z');
+        return Number.isFinite(stamp) && new Date(stamp).toISOString().slice(0,10) === value ? stamp : null;
+    };
+    const end = date(reservasi), start = date(rujukan);
+    return end === null || start === null ? null : Math.round((end-start)/86400000);
+}
+// Jhon | 2026-11-27 16:32 WITA | UBAH: rangkuman fakta SEP, rujukan dan log, tanpa saran.
+async function loadSuratSummary(target) {
+    const add = text => { const p = document.createElement('p'); p.textContent = text; target.appendChild(p); };
+    target.textContent = 'Memuat rangkuman SEP dan rujukan…';
+    if (!target.dataset.sep) { target.textContent = 'Rangkuman belum dapat diperiksa: SEP asal kosong.'; return; }
+    const csrf = document.querySelector('#monitoring-logout [name="_token"]');
+    if (!csrf) { target.textContent = 'Sesi tidak tersedia. Silakan muat ulang halaman.'; return; }
+    const request = async url => {
+        const abort = new AbortController(), timer = setTimeout(() => abort.abort(), 45000);
+        try {
+            const response = await fetch(url, {method:'POST', signal:abort.signal, headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf.value}, body:JSON.stringify({noSEP:target.dataset.sep})});
+            if (!response.ok) throw new Error('Dokumen belum tersedia');
+            const json = await response.json();
+            if (!json.data || typeof json.data !== 'object') throw new Error('Format dokumen tidak sesuai');
+            return json.data;
+        } finally { clearTimeout(timer); }
+    };
+    const results = await Promise.allSettled([
+        request("{{ route('bpjs-antrean.surat-kontrol-sep') }}"),
+        request("{{ route('bpjs-antrean.surat-kontrol-rujukan') }}"),
+        request("{{ route('bpjs-antrean.surat-kontrol-log') }}")
+    ]);
+    if (!target.isConnected) return;
+    const sep = results[0].status === 'fulfilled' ? results[0].value : {};
+    const ref = results[1].status === 'fulfilled' ? results[1].value : {};
+    const days = suratSummaryDays(target.dataset.reservasi, ref['Tanggal Rujukan']);
+    target.textContent = '';
+    add('Rangkuman SEP & Rujukan');
+    add('No SEP: ' + target.dataset.sep);
+    add('Tanggal SEP: ' + (sep['Tanggal SEP'] || 'Belum tersedia'));
+    add('No rujukan: ' + (ref['No Rujukan'] || sep['No Rujukan'] || 'Belum tersedia'));
+    add('Poli reservasi: ' + (target.dataset.poli || 'Tidak tersedia'));
+    add('Poli SEP: ' + (sep.Poli || 'Belum tersedia'));
+    add('Poli rujukan: ' + (ref['Poli Rujukan'] || 'Belum tersedia'));
+    add('Tanggal rujukan: ' + (ref['Tanggal Rujukan'] || 'Belum tersedia'));
+    add('Tanggal reservasi: ' + (target.dataset.reservasi || 'Belum tersedia'));
+    add('Selisih tanggal reservasi − rujukan: ' + (days === null ? 'Tidak tersedia' : days + ' hari'));
+    add('Informasi Log Bridging');
+    if (results[2].status !== 'fulfilled' || !Array.isArray(results[2].value)) {
+        add('Log bridging belum dapat diambil.');
+        return;
+    }
+    const logs = results[2].value;
+    if (!logs.length) { add('Tidak ada log bridging pada hasil pencarian SEP ini.'); return; }
+    logs.forEach((item, index) => {
+        add('Log ' + (index + 1));
+        add('User penginput: ' + (typeof item.user === 'string' && item.user.trim() ? item.user : 'Tidak tercatat'));
+        ['data', 'response'].forEach(key => {
+            add(key === 'data' ? 'Data' : 'Response');
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(item[key] ?? null, null, 2);
+            pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#f8fafc;padding:10px;border-radius:8px';
+            target.appendChild(pre);
+        });
+    });
+    add('Log ditampilkan sesuai hasil pencarian API, maksimal 20 log.');
+}
 </script>

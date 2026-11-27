@@ -1026,6 +1026,17 @@ class BpjsAntreanMonitorController extends Controller
             'per_page' => $perPage,
         ];
 
+        // Jhon | 2026-11-27 16:07 WITA | TAMBAH: ekspor seluruh hasil filter sebelum pagination; tidak hanya baris DOM infinite scroll.
+        if (in_array($request->query('export'), ['excel','print'], true)) {
+            // Jhon | 2026-11-27 16:08 WITA | TAMBAH: validasi kedua sumber, termasuk hasil kosong tanpa iterasi baris.
+            $exportBpjsCode = (string) data_get($dataBpjs, 'metaData.code', data_get($dataBpjs, 'metadata.code', ''));
+            $exportSimrsCode = (string) data_get($dataSimrs, 'metaData.code', data_get($dataSimrs, 'metadata.code', ''));
+            if (!$bpjsListValid || !in_array($exportBpjsCode, ['200','201'], true) || $exportSimrsCode !== '200') {
+                return response('Ekspor dibatalkan: hasil pemeriksaan SIMRS/BPJS belum valid. Muat ulang laporan.', 502)->header('Cache-Control','private, no-store');
+            }
+            return app(\App\Services\SuratKontrolExportService::class)->export($hasilCollection, $filters, $request->query('export'));
+        }
+
         return view('bpjs-antrean.cek-surat-kontrol', compact(
             'dataSimrs',
             'dataBpjs',
