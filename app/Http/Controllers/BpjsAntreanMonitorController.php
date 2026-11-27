@@ -709,9 +709,9 @@ class BpjsAntreanMonitorController extends Controller
             $riwayatSimrs = [];
         }
 
-        // Jhon | 2026-11-25 20:08 WITA | TAMBAH: urut tanggal/jam pembuatan SIMRS ASC sebelum filter dan pagination; tanggal kosong di akhir.
+        // Jhon | 2026-11-27 10:52 WITA | UBAH: urut tglinput ASC sebelum filter/pagination, sama dengan kolom input; kosong/tidak valid tetap di akhir.
         $riwayatSimrs = collect($riwayatSimrs)->map(function ($row, $index) {
-            $created = data_get($row, 'tglentry');
+            $created = data_get($row, 'tglinput');
             $timestamp = is_string($created) && trim($created) !== '' ? strtotime($created) : false;
             return ['row' => $row, 'time' => $timestamp === false ? PHP_INT_MAX : $timestamp, 'index' => $index];
         })->sort(function ($a, $b) {
@@ -750,6 +750,13 @@ class BpjsAntreanMonitorController extends Controller
         $matcher = new \App\Services\SuratKontrolMatcher();
         $hasil = [];
 
+        // Jhon | 2026-11-27 11:14 WITA | TAMBAH: baca status tersimpan sekaligus; kegagalan database tidak dianggap belum diverifikasi.
+        $verificationRecords = null;
+        try {
+            $verificationRecords = \App\Models\SuratKontrolVerification::whereIn('norec', collect($riwayatSimrs)->pluck('norec')->filter()->unique()->values()->all())
+                ->get(['norec','permasalahan','keterangan'])->keyBy('norec');
+        } catch (\Throwable $e) { /* Status tidak diketahui sampai tabel/koneksi siap. */ }
+
         foreach ($riwayatSimrs as $row) {
             // Jhon | 2026-11-24 15:13 WITA | UBAH: syarat tampil norec terisi menggantikan kewajiban tglkontrol.
             $norecWajib = data_get($row, 'norec');
@@ -762,6 +769,13 @@ class BpjsAntreanMonitorController extends Controller
 
             $tanggalReservasi = data_get($row, 'tanggalreservasi');
             $tanggalKontrolSimrs = data_get($row, 'tglkontrol');
+            // Jhon | 2026-11-27 10:25 WITA | TAMBAH: format tampilan terpisah dari tanggal pembanding; nilai kosong tidak menjadi tanggal hari ini.
+            $formatTanggalSurkon = static function ($value, $format) {
+                if (!is_string($value) || trim($value) === '') return null;
+                try { return \Carbon\Carbon::parse($value)->format($format); }
+                catch (\Throwable $e) { return null; }
+            };
+
 
             $tanggalPembanding = null;
 
@@ -831,7 +845,24 @@ class BpjsAntreanMonitorController extends Controller
                 if ($noSuratSimrs) $alasan[] = 'Status Ada di SIMRS hanya berarti nomor surat SIMRS terisi; belum membuktikan surat ditemukan di BPJS.';
             }
 
+            // Jhon | 2026-11-27 11:06 WITA | TAMBAH: grant reservasi UUID dari sumber SIMRS, terikat sesi selama dua jam.
+            $verificationToken = null;
+            // Jhon | 2026-11-27 11:09 WITA | UBAH: grant hanya untuk surat kosong pada kedua sumber dan hasil BPJS yang valid; gagal pencarian bukan bukti kosong.
+            $verificationAllowed = $status === 'BELUM_ADA_SURAT_KONTROL'
+                && $bpjsListValid && in_array($kodeResponsBpjs, ['200', '201'], true)
+                && !collect($kandidatIdentitas)->contains(function ($candidate) use ($matcher) { return $matcher->number($candidate) !== ''; });
+            if ($verificationAllowed && !\Illuminate\Support\Facades\Validator::make(['norec'=>$norecWajib], ['norec'=>'required|uuid'])->fails()) {
+                $verificationToken = \Illuminate\Support\Facades\Crypt::encryptString(json_encode([
+                    'norec'=>(string) $norecWajib, 'session'=>hash('sha256', $request->session()->getId()), 'expires'=>time()+7200,
+                ]));
+            }
             $hasil[] = [
+                'verification_token' => $verificationToken,
+                'verification_norec' => (string) $norecWajib,
+                // Jhon | 2026-11-27 11:14 WITA | TAMBAH: null membedakan gagal baca dari belum tersimpan.
+                'verification_saved' => $verificationRecords === null ? null : $verificationRecords->has((string) $norecWajib),
+                'verification_problem' => $verificationRecords === null ? null : data_get($verificationRecords->get((string) $norecWajib), 'permasalahan'),
+                'verification_note' => $verificationRecords === null ? null : data_get($verificationRecords->get((string) $norecWajib), 'keterangan'),
                 'status' => $status,
                 'status_label' => $statusLabel,
                 // Jhon | 2026-11-23 20:22 WITA | TAMBAH: rincian alasan untuk klik status.
@@ -858,7 +889,10 @@ class BpjsAntreanMonitorController extends Controller
                 'namapasien' => data_get($row, 'namapasien'),
                 'nobpjs' => $noKartuSimrs,
                 'noreservasi' => data_get($row, 'noreservasi'),
+                // Jhon | 2026-11-27 10:52 WITA | UBAH: tanggal input memakai field tglinput sesuai contoh respons pengguna, bukan tglentry/created_at.
                 'tanggalreservasi' => $tanggalReservasi,
+                'tanggalreservasi_tampilan' => $formatTanggalSurkon($tanggalReservasi, 'Y-m-d'),
+                'tanggalinput_tampilan' => $formatTanggalSurkon(data_get($row, 'tglinput'), 'Y-m-d H:i:s'),
                 'tanggal_pembanding' => $tanggalPembanding,
 
                 'poli' => data_get($row, 'poli') ?: data_get($row, 'namaruangan'),
@@ -895,6 +929,15 @@ class BpjsAntreanMonitorController extends Controller
                 return $normalizeKelompokPasien($item['kelompokpasien'] ?? '') === 'BPJS';
             })
             ->when($statusFilter !== 'ALL', function ($items) use ($statusFilter) {
+                // Jhon | 2026-11-27 11:35 WITA | TAMBAH: dua filter verifikasi sebelum hitungan/pagination, null tidak dianggap belum.
+                if (in_array($statusFilter, ['BELUM_SURAT_SUDAH_VERIFIKASI', 'BELUM_SURAT_BELUM_VERIFIKASI'], true)) {
+                    $verified = $statusFilter === 'BELUM_SURAT_SUDAH_VERIFIKASI';
+                    return $items->filter(function ($item) use ($verified) {
+                        return $item['status'] === 'BELUM_ADA_SURAT_KONTROL'
+                            && !empty($item['verification_token'])
+                            && ($item['verification_saved'] ?? null) === $verified;
+                    });
+                }
                 return $items->where('status', $statusFilter);
             })
             ->when($keyword !== '', function ($items) use ($keyword) {
@@ -2274,6 +2317,49 @@ class BpjsAntreanMonitorController extends Controller
     // Jhon | 2026-11-24 12:57 WITA | TAMBAH: GET antrean per kode booking, respons whitelist tanpa operasi pendaftaran.
     // Jhon | 2026-11-24 14:04 WITA | TAMBAH: lookup log baca-saja untuk status Belum, sesi dan CSRF mengikuti web middleware.
     // Jhon | 2026-11-24 14:15 WITA | TAMBAH: log surat kontrol menurut SEP asal SIMRS; POST terproteksi sesi/CSRF.
+    // Jhon | 2026-11-27 10:33 WITA | TAMBAH: respons SEP diproyeksikan ke informasi tampilan; exception mentah tidak dikirim.
+    // Jhon | 2026-11-27 10:50 WITA | TAMBAH: nomor rujukan diambil dari SEP sumber, bukan ditebak dari nomor reservasi.
+    public function suratKontrolRujukan(Request $request, \App\Services\BpjsVclaimService $service)
+    {
+        $input = $request->validate(['noSEP'=>'required|string|max:64|regex:/^[A-Za-z0-9.\-]+$/']);
+        try {
+            $sep = $service->getSepDetail($input['noSEP']);
+            $number = data_get($sep, 'response.noRujukan');
+            if (!is_string($number) || !preg_match('/^[A-Za-z0-9.\-]{1,64}$/', $number)) return response()->json(['message'=>'Nomor rujukan tidak tersedia pada SEP ini.'], 404);
+            $result = $service->getRujukanDetail($number);
+            if ((string) data_get($result, 'metaData.code', data_get($result, 'metadata.code')) !== '200') $result = $service->getRujukanDetail($number, true);
+            $detail = data_get($result, 'response.rujukan');
+            if ((string) data_get($result, 'metaData.code', data_get($result, 'metadata.code')) !== '200' || !is_array($detail)) return response()->json(['message'=>'Rincian rujukan belum tersedia dari BPJS.','number'=>$number], 502);
+            $data = ['No Rujukan'=>$number];
+            foreach (['Tanggal Rujukan'=>'tglKunjungan','Nama Peserta'=>'peserta.nama','No Kartu'=>'peserta.noKartu','Asal Faskes'=>'provPerujuk.nama','Poli Rujukan'=>'poliRujukan.nama','Diagnosa'=>'diagnosa.nama','Pelayanan'=>'pelayanan.nama','Keluhan'=>'keluhan'] as $label=>$path) {
+                $value = data_get($detail,$path); $data[$label] = is_scalar($value) ? (string) $value : null;
+            }
+            return response()->json(['data'=>$data,'number'=>$number])->header('Cache-Control','private, no-store');
+        } catch (\Throwable $e) { return response()->json(['message'=>'Informasi rujukan belum dapat diambil.'],502); }
+    }
+
+    public function suratKontrolSep(Request $request, \App\Services\BpjsVclaimService $service)
+    {
+        $input = $request->validate(['noSEP' => 'required|string|max:64|regex:/^[A-Za-z0-9.\-]+$/']);
+        try {
+            $result = $service->getSepDetail($input['noSEP']);
+            $code = data_get($result, 'metaData.code', data_get($result, 'metadata.code'));
+            $detail = data_get($result, 'response');
+            if ((string) $code !== '200' || !is_array($detail)) {
+                return response()->json(['message' => 'Informasi SEP belum tersedia dari BPJS.'], 502);
+            }
+            $fields = ['No SEP'=>'noSep','Tanggal SEP'=>'tglSep','Jenis Pelayanan'=>'jnsPelayanan','Poli'=>'poli','Diagnosa'=>'diagnosa','Kelas Rawat'=>'kelasRawat','No Rujukan'=>'noRujukan','Nama Peserta'=>'peserta.nama','No Kartu'=>'peserta.noKartu','No RM'=>'peserta.noMr','Tanggal Lahir'=>'peserta.tglLahir','Jenis Peserta'=>'peserta.jnsPeserta','Hak Kelas'=>'peserta.hakKelas'];
+            $data = [];
+            foreach ($fields as $label => $path) {
+                $value = data_get($detail, $path);
+                $data[$label] = is_scalar($value) && trim((string) $value) !== '' ? (string) $value : null;
+            }
+            return response()->json(['data'=>$data])->header('Cache-Control', 'private, no-store');
+        } catch (\Throwable $e) {
+            return response()->json(['message'=>'Informasi SEP belum dapat diambil. Silakan coba kembali.'], 502);
+        }
+    }
+
     public function suratKontrolLog(Request $request, \App\Services\AntreanBridgingLogService $service)
     {
         $input = $request->validate(['noSEP' => 'required|string|max:64|regex:/^[A-Za-z0-9.\-]+$/']);

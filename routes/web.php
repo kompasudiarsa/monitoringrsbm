@@ -201,3 +201,12 @@ Route::post('/bpjs-antrean/riwayat-antrean-log', [BpjsAntreanMonitorController::
 
 // Jhon | 2026-11-24 14:15 WITA | TAMBAH: pencarian log surat kontrol baca-saja melalui POST.
 Route::post('/bpjs-antrean/surat-kontrol-log', [BpjsAntreanMonitorController::class, 'suratKontrolLog'])->middleware('throttle:30,1')->name('bpjs-antrean.surat-kontrol-log');
+
+// Jhon | 2026-11-27 10:33 WITA | TAMBAH: detail SEP baca-saja melalui POST, tetap memakai sesi, CSRF, dan throttle.
+Route::post('/bpjs-antrean/surat-kontrol-sep', [BpjsAntreanMonitorController::class, 'suratKontrolSep'])->middleware('throttle:30,1')->name('bpjs-antrean.surat-kontrol-sep');
+
+// Jhon | 2026-11-27 10:50 WITA | TAMBAH: lookup rujukan tetap terproteksi sesi/CSRF dan throttle.
+Route::post('/bpjs-antrean/surat-kontrol-rujukan', [BpjsAntreanMonitorController::class, 'suratKontrolRujukan'])->middleware('throttle:30,1')->name('bpjs-antrean.surat-kontrol-rujukan');
+
+// Jhon | 2026-11-27 11:06 WITA | TAMBAH: simpan verifikasi melalui middleware web sesi/CSRF.
+Route::post('/bpjs-antrean/surat-kontrol-verifikasi', [\App\Http\Controllers\SuratKontrolVerificationController::class, 'save'])->middleware('throttle:30,1')->name('bpjs-antrean.surat-kontrol-verifikasi');

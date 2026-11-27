@@ -315,6 +315,10 @@
         align-items: center;
     }
 
+    /* Jhon | 2026-11-27 11:14 WITA | TAMBAH: merah belum, biru tersimpan; status gagal baca netral. */
+    .btn-mini.surat-verify[data-verified="no"]{background:#dc2626;color:#fff;border-color:#dc2626}
+    .btn-mini.surat-verify[data-verified="yes"]{background:#0284c7;color:#fff;border-color:#0284c7}
+    .btn-mini.surat-verify[data-verified="unknown"]{background:#64748b;color:#fff;border-color:#64748b}
     .btn-mini {
         border: 0;
         border-radius: 999px;
@@ -674,6 +678,24 @@
         .page .unified-filter-card { padding: 14px; }
         .page .unified-filter-card .header-page > .unified-header-actions { flex: 0 1 auto; }
     }
+    /* Jhon | 2026-11-27 11:15 WITA | TAMBAH: gaya khusus form verifikasi; modal lain dan hook drag tetap. */
+    #surat-verification-modal{width:min(560px,calc(100vw - 32px));padding:0;border:1px solid #dbeafe;border-radius:20px;box-shadow:0 24px 80px #0f172a40;max-height:calc(100dvh - 32px);overflow:auto}
+    #surat-verification-modal::backdrop{background:#0f172a80;backdrop-filter:blur(3px)}
+    #surat-verification-modal .shared-status-header{background:linear-gradient(120deg,#eff6ff,#fff);padding:20px 24px;border-bottom:1px solid #dbeafe}
+    #surat-verification-modal h2{font-size:18px;color:#0f172a;margin:0}
+    #surat-verification-form{display:flex;flex-direction:column;gap:20px;padding:24px}
+    #surat-verification-form .verification-reference{margin:0;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:12px}
+    #verification-norec{display:block;margin-top:5px;color:#334155;font-family:monospace;overflow-wrap:anywhere}
+    #surat-verification-form label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:600;color:#334155}
+    #surat-verification-form select,#surat-verification-form textarea{box-sizing:border-box;width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:12px 14px;font:inherit;font-weight:400;color:#0f172a}
+    #surat-verification-form textarea{resize:vertical;min-height:110px}
+    #surat-verification-form select:focus,#surat-verification-form textarea:focus{outline:3px solid #bae6fd;border-color:#0284c7}
+    #surat-verification-form .verification-footer{display:flex;justify-content:flex-end;border-top:1px solid #e2e8f0;padding-top:18px}
+    #surat-verification-form button[type=submit]{padding:12px 20px;border:0;border-radius:10px;background:#0284c7;color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+    #surat-verification-form button:disabled{opacity:.55;cursor:wait}
+    #verification-feedback{margin:0;color:#334155;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+    #verification-feedback:empty{display:none}
+    @media(max-width:480px){#surat-verification-form{padding:18px;gap:16px}#surat-verification-form .verification-footer button{width:100%}}
 </style>
 
 @php
@@ -744,6 +766,9 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                     <option value="BPJS_GAGAL" {{ $filters['status'] === 'BPJS_GAGAL' ? 'selected' : '' }}>Pengecekan BPJS Gagal</option>
                     <option value="ADA_DI_BPJS_BELUM_SIMRS" {{ $filters['status'] === 'ADA_DI_BPJS_BELUM_SIMRS' ? 'selected' : '' }}>Ada di BPJS, belum SIMRS</option>
                     <option value="BELUM_ADA_SURAT_KONTROL" {{ $filters['status'] === 'BELUM_ADA_SURAT_KONTROL' ? 'selected' : '' }}>Belum Ada Surat Kontrol</option>
+                    {{-- Jhon | 2026-11-27 11:35 WITA | TAMBAH: pisahkan surat kosong berdasarkan verifikasi petugas tersimpan. --}}
+                    <option value="BELUM_SURAT_SUDAH_VERIFIKASI" {{ $filters['status'] === 'BELUM_SURAT_SUDAH_VERIFIKASI' ? 'selected' : '' }}>Belum Ada Surat Kontrol — Sudah Diverifikasi</option>
+                    <option value="BELUM_SURAT_BELUM_VERIFIKASI" {{ $filters['status'] === 'BELUM_SURAT_BELUM_VERIFIKASI' ? 'selected' : '' }}>Belum Ada Surat Kontrol — Belum Diverifikasi</option>
                     <option value="DATA_TIDAK_LENGKAP" {{ $filters['status'] === 'DATA_TIDAK_LENGKAP' ? 'selected' : '' }}>Data Tidak Lengkap</option>
                 </select>
             </div>
@@ -829,14 +854,20 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                         <th>Status</th>
                         {{-- Jhon | 2026-11-23 21:06 WITA | UBAH: judul kolom SEP asal SIMRS. --}}
                         <th>No SEP ASAL</th>
+                        {{-- Jhon | 2026-11-27 10:50 WITA | TAMBAH: rujukan bersumber dari lookup SEP, tidak memuat nomor dugaan. --}}
+                        <th>No Rujukan</th>
                         <th>No Surat Kontrol SIMRS</th>
+                        {{-- Jhon | 2026-11-27 10:40 WITA | PINDAH: tampilkan poli SIMRS di samping nomor surat, tanpa duplikasi kolom. --}}
+                        <th>Poli</th>
                         <th>No RM</th>
                         <th>Nama Pasien</th>
                         {{-- Jhon | 2026-11-23 21:08 WITA | UBAH: hapus kolom kelompok pasien; filter BPJS backend tetap. --}}
                         <th>No BPJS</th>
                         <th>No Reservasi</th>
+                        {{-- Jhon | 2026-11-27 10:25 WITA | TAMBAH: kolom tanggal input sesudah reservasi, termasuk hasil infinite scroll. --}}
                         <th>Tgl Reservasi</th>
-                        <th>Poli</th>
+                        <th>Tanggal Input</th>
+                        {{-- Jhon | 2026-11-27 10:40 WITA | PINDAH: kolom Poli kini tepat setelah nomor surat kontrol SIMRS. --}}
                         <th>Dokter</th>
                         <th>No Antrean</th>
                         {{-- Jhon | 2026-11-23 21:09 WITA | UBAH: hapus dua kolom BPJS paling belakang sesuai gambar; SEP asal SIMRS tetap. --}}
@@ -854,6 +885,7 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                         <td>{{ ($hasil->firstItem() ?? 1) + $index }}</td>
                         <td>
                             <div class="action-group">
+                                {{-- Jhon | 2026-11-27 11:12 WITA | PINDAH: tombol Verifikasi dipindahkan ke sel Status. --}}
                                 <button
                                     type="button"
                                     class="btn-mini btn-cek-nokartu"
@@ -881,6 +913,12 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                             {{-- Jhon | 2026-11-23 18:31 WITA | UBAH: status pembandingan nomor surat, poli, dokter. --}}
                             {{-- Jhon | 2026-11-23 19:25 WITA | UBAH: satu warna per status, label tetap terbaca tanpa bergantung warna. --}}
                             {{-- Jhon | 2026-11-23 19:33 WITA | UBAH: klik status membuka bukti pembandingan; tetap berfungsi pada baris infinite scroll. --}}
+                            {{-- Jhon | 2026-11-27 11:12 WITA | PINDAH: verifikasi pada Status, di luar rincian agar tidak tersembunyi/ikut dipindah ke modal status. --}}
+                                {{-- Jhon | 2026-11-27 11:06 WITA | TAMBAH: verifikasi reservasi terpilih, bukan UUID contoh yang di-hardcode. --}}
+                                {{-- Jhon | 2026-11-27 11:09 WITA | UBAH: sembunyikan verifikasi jika surat sudah ada atau pemeriksaan BPJS belum valid. --}}
+                                @if(!empty($row['verification_token']))
+                                <button type="button" class="btn-mini surat-verify" data-verified="{{ ($row['verification_saved'] ?? null) === null ? 'unknown' : ($row['verification_saved'] ? 'yes' : 'no') }}" data-problem="{{ $row['verification_problem'] ?? '' }}" data-note="{{ $row['verification_note'] ?? '' }}" data-token="{{ $row['verification_token'] ?? '' }}" data-norec="{{ $row['verification_norec'] ?? '' }}" @if(empty($row['verification_token'])) disabled @endif>{{ ($row['verification_saved'] ?? null) === null ? 'Status verifikasi belum terbaca' : ($row['verification_saved'] ? 'Sudah diverifikasi' : 'Belum diverifikasi') }}</button>
+                                @endif
                             <details class="kontrol-detail">
                                 <summary class="badge kontrol-status-{{ strtolower($row['status']) }}" title="{{ $row['status_label'] }} — Klik untuk melihat rincian"><span class="kontrol-status-text">{{ $row['status_label'] }} ⓘ</span></summary>
                                 <div class="kontrol-explanation">
@@ -906,15 +944,22 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                         </td>
 
                         {{-- Jhon | 2026-11-23 21:05 WITA | UBAH: SEP memakai sumber SIMRS; kosong ditampilkan tanda hubung. --}}
-                        <td>{{ $row['sep_simrs'] ?: '-' }}</td>
+                        {{-- Jhon | 2026-11-27 10:33 WITA | UBAH: nomor SEP membuka detail baca-saja, termasuk baris infinite scroll. --}}
+                        {{-- Jhon | 2026-11-27 10:50 WITA | UBAH: SEP dan rujukan memakai popup draggable bersama. --}}
+                        <td>@if(!empty($row['sep_simrs']))<button type="button" class="surat-sep-check" data-sep="{{ $row['sep_simrs'] }}">{{ $row['sep_simrs'] }}</button>@else - @endif</td>
+                        <td>@if(!empty($row['sep_simrs']))<button type="button" class="surat-sep-check" data-kind="rujukan" data-sep="{{ $row['sep_simrs'] }}">Lihat No Rujukan</button>@else - @endif</td>
                         <td>{{ $row['nosurat_simrs'] ?: '-' }}</td>
+                        {{-- Jhon | 2026-11-27 10:40 WITA | PINDAH: tetap gunakan field poli SIMRS yang sudah tersedia. --}}
+                        <td>{{ $row['poli'] ?? '-' }}</td>
                         <td>{{ $row['nocm'] ?? '-' }}</td>
                         <td><b>{{ $row['namapasien'] ?? '-' }}</b></td>
                         {{-- Jhon | 2026-11-23 21:08 WITA | UBAH: hapus isi kolom kelompok pasien. --}}
                         <td>{{ $row['nobpjs'] ?? '-' }}</td>
                         <td>{{ $row['noreservasi'] ?? '-' }}</td>
-                        <td>{{ $row['tanggalreservasi'] ?? '-' }}</td>
-                        <td>{{ $row['poli'] ?? '-' }}</td>
+                        {{-- Jhon | 2026-11-27 10:25 WITA | UBAH: format reservasi tanggal saja dan input lengkap dengan jam. --}}
+                        <td>{{ $row['tanggalreservasi_tampilan'] ?? '-' }}</td>
+                        <td>{{ $row['tanggalinput_tampilan'] ?? '-' }}</td>
+                        {{-- Jhon | 2026-11-27 10:40 WITA | PINDAH: isi Poli dipindah ke setelah nomor surat. --}}
                         <td>{{ $row['dokter'] ?? '-' }}</td>
                         <td>{{ $row['noantrianpoli'] ?? '-' }}</td>
                         {{-- Jhon | 2026-11-23 21:09 WITA | UBAH: hapus sel surat dan SEP asal BPJS paling belakang. --}}
@@ -925,7 +970,8 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                     </tr>
                     @empty
                     <tr>
-                       <td colspan="13" style="text-align:center; padding:30px; color:#64748b;">
+                       {{-- Jhon | 2026-11-27 10:25 WITA | UBAH: sesuaikan bentang baris kosong dengan tambahan kolom input. --}}
+                       <td colspan="15" style="text-align:center; padding:30px; color:#64748b;">
                             Tidak ada data reservasi SIMRS pada tanggal {{ $filters['dari'] }} s/d {{ $filters['sampai'] }}.
                             </td>
                     </tr>
@@ -1024,6 +1070,92 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
     <div class="shared-status-header" data-drag-handle><h2>Rincian Status Surat Kontrol</h2><button type="button" data-modal-close aria-label="Tutup">×</button></div>
     <div id="surat-status-body" class="shared-status-body"></div>
 </dialog>
+
+{{-- Jhon | 2026-11-27 10:50 WITA | TAMBAH: modal memakai handler drag dan tutup dari layout bersama. --}}
+{{-- Jhon | 2026-11-27 11:06 WITA | TAMBAH: form verifikasi popup dapat digeser, tidak memuat identitas pasien tambahan. --}}
+<dialog id="surat-verification-modal" data-draggable-modal class="shared-status-modal">
+<div class="shared-status-header" data-drag-handle><h2>Verifikasi Surat Kontrol</h2><button type="button" data-modal-close aria-label="Tutup">×</button></div>
+<form id="surat-verification-form" class="shared-status-body">
+{{-- Jhon | 2026-11-27 11:15 WITA | UBAH: referensi ringkas dan form vertikal, ID field tetap untuk handler existing. --}}
+<p class="verification-reference">REFERENSI RESERVASI<span id="verification-norec"></span></p>
+<input type="hidden" name="reservation_token">
+{{-- Jhon | 2026-11-27 11:21 WITA | TAMBAH: kategori tambahan memakai nilai yang diterima validator server. --}}
+<label>Permasalahan <select name="permasalahan" required><option value="">Pilih permasalahan</option value="rujukan">Rujukan</option><option value="sep">SEP</option><option value="jadwal_poli">Jadwal Poli</option><option value="lainnya">Lainnya</option><option value="kontrol_internal">Kontrol Internal</option></select></label>
+<label>Catatan / Keterangan <textarea name="keterangan" maxlength="2000" rows="4" placeholder="Tuliskan hasil pemeriksaan atau kendala yang ditemukan…"></textarea></label>
+<div class="verification-footer"><button type="submit" class="btn-mini">Simpan Verifikasi</button></div><p id="verification-feedback" role="status" aria-live="polite"></p>
+</form></dialog>
+<script>
+// Jhon | 2026-11-27 11:06 WITA | TAMBAH: delegasi mendukung infinite scroll; cegah submit ganda dan pertahankan catatan ketika simpan gagal.
+document.addEventListener('click', function(event) {
+    const button=event.target.closest('.surat-verify');
+    if (!button || button.disabled) return;
+    const form=document.getElementById('surat-verification-form');
+    if (form.dataset.busy) return;
+    // Jhon | 2026-11-27 11:14 WITA | TAMBAH: isi ulang verifikasi tersimpan saat dibuka.
+    form.reset(); form.elements.reservation_token.value=button.dataset.token;
+    form.elements.permasalahan.value=button.dataset.problem || '';
+    form.elements.keterangan.value=button.dataset.note || '';
+    document.getElementById('verification-norec').textContent=button.dataset.norec;
+    document.getElementById('verification-feedback').textContent='';
+    document.getElementById('surat-verification-modal').showModal();
+});
+document.getElementById('surat-verification-form').addEventListener('submit', async function(event) {
+    event.preventDefault(); if (this.dataset.busy || !this.reportValidity()) return;
+    const csrf=document.querySelector('#monitoring-logout [name="_token"]');
+    const feedback=document.getElementById('verification-feedback');
+    if (!csrf) { feedback.textContent='Silakan login kembali.'; return; }
+    this.dataset.busy='1'; const button=this.querySelector('button[type="submit"]'); button.disabled=true;
+    feedback.textContent='Menyimpan verifikasi…';
+    try {
+        const response=await fetch("{{ route('bpjs-antrean.surat-kontrol-verifikasi') }}", {method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf.value},body:JSON.stringify(Object.fromEntries(new FormData(this)))});
+        if (response.status===401 || response.status===419) throw new Error('Sesi berakhir. Silakan login kembali.');
+        const json=await response.json(); if (!response.ok) throw new Error(json.message || 'Verifikasi belum tersimpan.');
+        // Jhon | 2026-11-27 11:14 WITA | TAMBAH: jangan ubah warna saat gagal; perbarui seluruh tombol reservasi sama setelah server memastikan simpan.
+        if (json.verified === true) document.querySelectorAll('.surat-verify').forEach(item => {
+            if (item.dataset.norec !== json.norec) return;
+            item.dataset.verified='yes'; item.textContent='Sudah diverifikasi';
+            item.dataset.problem=this.elements.permasalahan.value; item.dataset.note=this.elements.keterangan.value;
+        });
+        feedback.textContent=json.message;
+        // Jhon | 2026-11-27 11:33 WITA | UBAH: tutup hanya setelah server memastikan verifikasi tersimpan, bukan saat request dimulai.
+        if (json.verified === true) document.getElementById('surat-verification-modal').close();
+    } catch(error) { feedback.textContent=error.message; }
+    finally { delete this.dataset.busy; button.disabled=false; }
+});
+</script>
+<dialog id="surat-document-modal" data-draggable-modal class="shared-status-modal">
+<div class="shared-status-header" data-drag-handle><h2 id="surat-document-title">Informasi Dokumen</h2><button type="button" data-modal-close aria-label="Tutup">×</button></div>
+<div id="surat-document-body" class="shared-status-body" role="status"></div>
+</dialog>
+<script>
+// Jhon | 2026-11-27 10:33 WITA | TAMBAH: delegasi lookup SEP, cegah request ganda dan render informasi sebagai teks.
+document.addEventListener('click', async function(event) {
+    const button = event.target.closest('.surat-sep-check');
+    if (!button || button.disabled) return;
+    // Jhon | 2026-11-27 10:50 WITA | UBAH: satu modal, hasil request lama tidak menimpa dokumen yang baru dipilih.
+    const modal = document.getElementById('surat-document-modal');
+    const target = document.getElementById('surat-document-body');
+    const kind = button.dataset.kind === 'rujukan' ? 'rujukan' : 'sep';
+    if (!modal || modal.dataset.busy) return;
+    document.getElementById('surat-document-title').textContent = kind === 'rujukan' ? 'Informasi Rujukan' : 'Informasi SEP';
+    if (!modal.open) modal.showModal();
+    modal.dataset.busy = '1';
+    const csrf = document.querySelector('#monitoring-logout [name="_token"]');
+    if (!target || !csrf) return;
+    button.disabled = true; target.textContent = 'Memuat informasi dokumen…';
+    try {
+        const response = await fetch(kind === 'rujukan' ? "{{ route('bpjs-antrean.surat-kontrol-rujukan') }}" : "{{ route('bpjs-antrean.surat-kontrol-sep') }}", {method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf.value}, body:JSON.stringify({noSEP:button.dataset.sep})});
+        if (response.status === 401 || response.status === 419) throw new Error('Sesi berakhir. Silakan login kembali.');
+        const json = await response.json();
+        if (kind === 'rujukan' && json.number) button.textContent = json.number;
+        if (!response.ok) throw new Error(json.message || 'Informasi dokumen gagal diambil.');
+        if (!json.data || typeof json.data !== 'object' || Array.isArray(json.data)) throw new Error('Format informasi SEP tidak sesuai.');
+        target.textContent = '';
+        Object.entries(json.data).forEach(([label,value]) => { const line = document.createElement('p'); line.textContent = label + ': ' + (value || '-'); target.appendChild(line); });
+    } catch(error) { target.textContent = error.message; }
+    finally { button.disabled = false; delete modal.dataset.busy; }
+});
+</script>
 @endsection
 <script>
     document.addEventListener('DOMContentLoaded', function() {

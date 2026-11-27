@@ -35,6 +35,18 @@ class BpjsVclaimService
         return $this->get("/RencanaKontrol/ListRencanaKontrol/tglAwal/{$tanggal}/tglAkhir/{$tanggal}/filter/{$filter}");
     }
 
+    // Jhon | 2026-11-27 10:33 WITA | TAMBAH: lookup SEP VClaim, bukan membuat atau mengubah SEP.
+    // Jhon | 2026-11-27 10:50 WITA | TAMBAH: baca rujukan FKTP atau RS melalui endpoint VClaim.
+    public function getRujukanDetail(string $number, bool $hospital = false): array
+    {
+        return $this->get(($hospital ? '/Rujukan/RS/' : '/Rujukan/') . rawurlencode($number));
+    }
+
+    public function getSepDetail(string $noSep): array
+    {
+        return $this->get('/SEP/' . rawurlencode($noSep));
+    }
+
     protected function get(string $endpoint): array
     {
         return $this->send('GET', $endpoint);
