@@ -845,9 +845,9 @@ class BpjsAntreanMonitorController extends Controller
                 if (!$tanggalPembanding) $alasan[] = 'Tanggal pembanding SIMRS kosong/tidak valid sehingga tidak bisa dibandingkan.';
             } elseif ($bpjsMatch) {
                 $alasan[] = 'Nomor kartu SIMRS dan BPJS sama; tanggal pembanding SIMRS ' . $tanggalPembanding . ' sama dengan tanggal rencana kontrol BPJS ' . data_get($bpjsMatch, 'tglRencanaKontrol') . '.';
-                if (!$noSuratBpjs) $alasan[] = 'Pasangan kartu/tanggal ditemukan, tetapi nomor surat pada kandidat BPJS pertama kosong.';
+                if (!$noSuratBpjs) $alasan[] = 'Pasangan kartu/tanggal ditemukan, tetapi nomor surat pada seluruh kandidat BPJS untuk pasangan tersebut kosong.';
                 if (!$noSuratSimrs) $alasan[] = 'Nomor surat SIMRS belum terisi.';
-                if (count($kandidatIdentitas) > 1) $alasan[] = 'Ada beberapa kandidat kartu/tanggal yang sama; aturan awal mengambil kandidat pertama.';
+                if (count($kandidatIdentitas) > 1) $alasan[] = 'Ada beberapa kandidat kartu/tanggal yang sama; dipakai kandidat pertama yang memiliki nomor surat jika tersedia.';
             } else {
                 $tanggalKartuSama = [];
                 foreach ($suratKontrolBpjs as $candidate) {
@@ -862,6 +862,25 @@ class BpjsAntreanMonitorController extends Controller
                     $alasan[] = 'Nomor kartu SIMRS tidak ditemukan pada daftar BPJS dalam periode filter. Tidak ada pasangan yang dapat dipakai untuk menyimpulkan tanggal berbeda; belum berarti nomor kartu SIMRS salah.';
                 }
                 if ($noSuratSimrs) $alasan[] = 'Nomor surat SIMRS terisi, tetapi tidak ditemukan surat BPJS dengan nomor kartu dan tanggal pembanding yang sama dalam periode filter.';
+            }
+
+            // Jhon | 2026-11-28 15:34 WITA | TAMBAH: rincian sesuai status aktual; rangkuman Belum Ada Surat Kontrol tidak diubah.
+            if ($status !== 'BELUM_ADA_SURAT_KONTROL') {
+                $ringkasanStatus = [
+                    'ADA_DI_SIMRS' => 'Surat kontrol tercatat di SIMRS dan ditemukan di BPJS berdasarkan nomor kartu dan tanggal pembanding yang sama.',
+                    'ADA_SIMRS_TIDAK_BPJS' => 'Surat kontrol tercatat di SIMRS, tetapi tidak ditemukan nomor surat kontrol BPJS untuk kartu dan tanggal pembanding yang sama dalam periode filter.',
+                    'ADA_DI_BPJS_BELUM_SIMRS' => 'Surat kontrol ditemukan di BPJS untuk kartu dan tanggal pembanding yang sama, tetapi nomor surat kontrol SIMRS belum terisi.',
+                    'DATA_TIDAK_LENGKAP' => 'Keberadaan surat pada kedua sistem belum dapat dibandingkan karena nomor kartu atau tanggal pembanding SIMRS belum lengkap/valid.',
+                    'BPJS_GAGAL' => 'Surat kontrol tercatat di SIMRS, tetapi keberadaannya di BPJS belum dapat dipastikan karena pemeriksaan BPJS gagal. Ini bukan status tidak ada di BPJS.',
+                ];
+                $bukti = [$ringkasanStatus[$status] ?? $statusLabel];
+                $bukti[] = 'Nomor surat kontrol SIMRS: ' . ($noSuratSimrs ?: 'Belum terisi') . '.';
+                $bukti[] = 'Nomor surat kontrol BPJS: ' . (!$bpjsComparisonValid ? 'Belum dapat diperiksa' : ($noSuratBpjs ?: 'Tidak ditemukan pada pasangan kartu/tanggal dalam periode filter')) . '.';
+                $bukti[] = 'Periode pencarian: ' . $dari . ' s/d ' . $sampai . '; kategori: ' . ($kategori === 'tglentri' ? 'tanggal entri' : 'tanggal rencana kontrol/reservasi') . '.';
+                if ($status === 'ADA_DI_SIMRS') {
+                    $bukti[] = 'Ditemukan di kedua sistem tidak berarti nomor surat keduanya sudah diperiksa kesamaannya.';
+                }
+                $alasan = array_merge($bukti, $alasan);
             }
 
             // Jhon | 2026-11-27 11:06 WITA | TAMBAH: grant reservasi UUID dari sumber SIMRS, terikat sesi selama dua jam.
