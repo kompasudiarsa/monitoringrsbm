@@ -795,7 +795,16 @@ class BpjsAntreanMonitorController extends Controller
 
             $key = $noKartuSimrs . '|' . $tanggalPembanding;
 
+            // Jhon | 2026-11-28 14:50 WITA | UBAH: cari kandidat kartu/tanggal yang memiliki nomor surat, bukan kandidat kosong pertama.
             $bpjsMatch = $indexBpjs[$key][0] ?? null;
+            foreach ($indexBpjs[$key] ?? [] as $candidate) {
+                if (!empty(data_get($candidate, 'noSuratKontrol', data_get($candidate, 'no_surat_kontrol')))) {
+                    $bpjsMatch = $candidate;
+                    break;
+                }
+            }
+            $bpjsComparisonValid = $bpjsListValid && in_array((string) data_get($dataBpjs, 'metaData.code', data_get($dataBpjs, 'metadata.code', '')), ['200', '201'], true);
+
 
             $noSuratBpjs = $bpjsMatch
                 ? data_get($bpjsMatch, 'noSuratKontrol', data_get($bpjsMatch, 'no_surat_kontrol'))
@@ -805,8 +814,17 @@ class BpjsAntreanMonitorController extends Controller
                 $status = 'DATA_TIDAK_LENGKAP';
                 $statusLabel = 'Data tidak lengkap';
             } elseif (!empty($noSuratSimrs)) {
-                $status = 'ADA_DI_SIMRS';
-                $statusLabel = 'Ada surat kontrol di SIMRS';
+                // Jhon | 2026-11-28 14:50 WITA | UBAH: pisahkan tidak ditemukan dari kegagalan pemeriksaan BPJS.
+                if (!$bpjsComparisonValid) {
+                    $status = 'BPJS_GAGAL';
+                    $statusLabel = 'Ada di SIMRS, pengecekan BPJS gagal';
+                } elseif (!empty($noSuratBpjs)) {
+                    $status = 'ADA_DI_SIMRS';
+                    $statusLabel = 'Ada di SIMRS dan BPJS';
+                } else {
+                    $status = 'ADA_SIMRS_TIDAK_BPJS';
+                    $statusLabel = 'Ada di SIMRS, tidak ada di BPJS';
+                }
             } elseif (!empty($noSuratBpjs)) {
                 $status = 'ADA_DI_BPJS_BELUM_SIMRS';
                 $statusLabel = 'Ada di BPJS, belum masuk SIMRS';
@@ -843,7 +861,7 @@ class BpjsAntreanMonitorController extends Controller
                 } else {
                     $alasan[] = 'Nomor kartu SIMRS tidak ditemukan pada daftar BPJS dalam periode filter. Tidak ada pasangan yang dapat dipakai untuk menyimpulkan tanggal berbeda; belum berarti nomor kartu SIMRS salah.';
                 }
-                if ($noSuratSimrs) $alasan[] = 'Status Ada di SIMRS hanya berarti nomor surat SIMRS terisi; belum membuktikan surat ditemukan di BPJS.';
+                if ($noSuratSimrs) $alasan[] = 'Nomor surat SIMRS terisi, tetapi tidak ditemukan surat BPJS dengan nomor kartu dan tanggal pembanding yang sama dalam periode filter.';
             }
 
             // Jhon | 2026-11-27 11:06 WITA | TAMBAH: grant reservasi UUID dari sumber SIMRS, terikat sesi selama dua jam.
@@ -877,6 +895,9 @@ class BpjsAntreanMonitorController extends Controller
                 // Jhon | 2026-11-23 19:42 WITA | TAMBAH: tampilkan SEP yang benar-benar dibandingkan.
                 // Jhon | 2026-11-23 21:06 WITA | UBAH: SEP asal SIMRS berasal dari field nosepasal, bukan nomor SEP lain.
                 'sep_simrs' => data_get($row, 'nosepasal'),
+                // Jhon | 2026-11-28 08:49 WITA | TAMBAH: teruskan penanda pembuatan dari respons SIMRS, tanpa menyimpulkan dari nomor surat.
+                'buatreservasi' => data_get($row, 'buatreservasi'),
+                'buatsurkon' => data_get($row, 'buatsurkon'),
                 'kodepoli_simrs' => data_get($row, 'kodepolibpjs'),
                 'kandidat_bpjs' => array_map(function ($candidate) use ($matcher) {
                     return [
@@ -992,6 +1013,9 @@ class BpjsAntreanMonitorController extends Controller
         $summary = [
             'total_simrs' => $hasilCollection->count(),
             // Jhon | 2026-11-23 18:31 WITA | UBAH: ringkasan sesuai, berbeda, ambigu, belum verifikasi, dan gagal.
+            // Jhon | 2026-11-28 14:50 WITA | TAMBAH: rekap selisih SIMRS/BPJS dan kegagalan pengecekan.
+            'ada_simrs_tidak_bpjs' => $hasilCollection->where('status', 'ADA_SIMRS_TIDAK_BPJS')->count(),
+            'bpjs_gagal' => $hasilCollection->where('status', 'BPJS_GAGAL')->count(),
             'ada_di_simrs' => $hasilCollection->where('status', 'ADA_DI_SIMRS')->count(),
             'tidak_sesuai' => $hasilCollection->whereIn('status', ['TIDAK_SESUAI', 'TIDAK_DITEMUKAN_BPJS'])->count(),
             'belum_verifikasi' => $hasilCollection->whereIn('status', ['AMBIGU', 'BELUM_TERVERIFIKASI', 'BPJS_GAGAL'])->count(),

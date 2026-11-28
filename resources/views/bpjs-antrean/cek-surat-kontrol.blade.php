@@ -629,6 +629,8 @@
     .kontrol-detail .kontrol-explanation { min-width: 230px; max-width: 420px; white-space: normal; padding: 12px; background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 8px; font-size: 13px; }
     .kontrol-explanation p { margin: 6px 0; }
     /* Jhon | 2026-11-23 20:00 WITA | UBAH: status awal ada di SIMRS memakai hijau. */
+    /* Jhon | 2026-11-28 14:50 WITA | TAMBAH: merah untuk surat SIMRS tidak ditemukan di BPJS. */
+    .badge.kontrol-status-ada_simrs_tidak_bpjs { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
     .badge.kontrol-status-ada_di_simrs { background: #dcfce7; color: #14532d; }
     .badge.kontrol-status-sesuai { background: #dcfce7; color: #14532d; }
     .badge.kontrol-status-ada_di_bpjs_belum_simrs { background: #dcfce7; color: #14532d; }
@@ -783,7 +785,10 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                 <select name="status">
                     <option value="ALL" {{ $filters['status'] === 'ALL' ? 'selected' : '' }}>Semua Status</option>
                     {{-- Jhon | 2026-11-23 18:31 WITA | UBAH: status pembandingan nomor surat, poli, dokter. --}}
-                    <option value="ADA_DI_SIMRS" {{ $filters['status'] === 'ADA_DI_SIMRS' ? 'selected' : '' }}>Ada Surat di SIMRS</option>
+                    <option value="ADA_DI_SIMRS" {{ $filters['status'] === 'ADA_DI_SIMRS' ? 'selected' : '' }}>Ada di SIMRS dan BPJS</option>
+                    {{-- Jhon | 2026-11-28 14:50 WITA | TAMBAH: filter selisih dan pemeriksaan gagal. --}}
+                    <option value="ADA_SIMRS_TIDAK_BPJS" {{ $filters['status'] === 'ADA_SIMRS_TIDAK_BPJS' ? 'selected' : '' }}>Ada di SIMRS, tidak ada di BPJS</option>
+                    <option value="BPJS_GAGAL" {{ $filters['status'] === 'BPJS_GAGAL' ? 'selected' : '' }}>Pengecekan BPJS gagal</option>
                     <option value="TIDAK_SESUAI" {{ $filters['status'] === 'TIDAK_SESUAI' ? 'selected' : '' }}>Tidak Sesuai</option>
                     <option value="TIDAK_DITEMUKAN_BPJS" {{ $filters['status'] === 'TIDAK_DITEMUKAN_BPJS' ? 'selected' : '' }}>Surat SIMRS Tidak Ditemukan di BPJS</option>
                     <option value="AMBIGU" {{ $filters['status'] === 'AMBIGU' ? 'selected' : '' }}>Beberapa Kandidat Surat</option>
@@ -840,6 +845,15 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
 
     {{-- Jhon | 2026-11-23 18:17 WITA | UBAH: judul ringkasan menjelaskan jumlah reservasi dan status surat kontrol. --}}
     <div class="stats">
+        {{-- Jhon | 2026-11-28 14:50 WITA | TAMBAH: dashboard selisih merah; gagal terpisah dari tidak ditemukan. --}}
+        <div class="stat-card" style="border:1px solid #fca5a5;background:#fef2f2;color:#991b1b">
+            <div class="stat-label">Ada di SIMRS, Tidak Ada di BPJS</div>
+            <div class="stat-value">{{ $summary['ada_simrs_tidak_bpjs'] }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Pengecekan BPJS Gagal</div>
+            <div class="stat-value">{{ $summary['bpjs_gagal'] }}</div>
+        </div>
         <div class="stat-card">
             <div class="stat-label">Total Reservasi BPJS</div>
             <div class="stat-value">{{ $summary['total_simrs'] }}</div>
@@ -847,7 +861,7 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
 
         <div class="stat-card">
             {{-- Jhon | 2026-11-23 18:31 WITA | UBAH: status pembandingan nomor surat, poli, dokter. --}}
-            <div class="stat-label">Surat Kontrol di SIMRS</div>
+            <div class="stat-label">Surat Kontrol di SIMRS dan BPJS</div>
             <div class="stat-value">{{ $summary['ada_di_simrs'] }}</div>
         </div>
 
@@ -961,6 +975,15 @@ $bpjsMessage = data_get($dataBpjs, 'metaData.message', data_get($dataBpjs, 'meta
                                 <div class="kontrol-explanation">
                                     {{-- Jhon | 2026-11-23 20:22 WITA | UBAH: tampilkan alasan spesifik hasil pencocokan, bukan informasi umum pasien. --}}
                                     <b>Hasil pemeriksaan data</b>
+                                    {{-- Jhon | 2026-11-28 08:49 WITA | TAMBAH: hanya flag true eksplisit ditampilkan; null/kosong tidak tampil. --}}
+                                    {{-- Jhon | 2026-11-28 12:48 WITA | UBAH: hapus informasi pembuatan reservasi; pertahankan informasi pembuatan surkon. --}}
+                                    {{-- Jhon | 2026-11-28 12:56 WITA | UBAH: false eksplisit tampil Tidak; null dan nilai tidak dikenal tetap tersembunyi. --}}
+                                    @if(in_array($row['buatsurkon'] ?? null, [true, 1, '1', 'true'], true))
+                                    <p>Dibuatkan surkon BPJS pada SIMRS: Ya</p>
+                                    @elseif(in_array($row['buatsurkon'] ?? null, [false, 0, '0', 'false'], true))
+                                    <p>Dibuatkan surkon BPJS pada SIMRS: Tidak</p>
+                                    @endif
+
                                     {{-- Jhon | 2026-11-24 14:15 WITA | TAMBAH: log Data/Response memakai SEP asal; tidak mengganti alasan pembandingan. --}}
                                     @if ($row['status'] === 'BELUM_ADA_SURAT_KONTROL')
                                         {{-- Jhon | 2026-11-27 16:18 WITA | TAMBAH: konteks rangkuman SEP/rujukan saat status dibuka. --}}
